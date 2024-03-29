@@ -1,0 +1,29 @@
+[package]
+name = "sxtetris"
+version = "0.1.0"
+edition = "2021"
+authors = ["shixinhuang99 <shixinhuang99@gmail.com>"]
+description = "a tetris game in terminal"
+repository = "https://github.com/shixinhuang99/sxtetris"
+license = "MIT"
+categories = ["games"]
+keywords = ["tetris", "tui"]
+include = ["Cargo.toml", "Cargo.lock", "README.md", "LICENSE", "src/**"]
+
+[dependencies]
+anyhow = "1.0.81"
+crossterm = { version = "0.27.0", features = ["event-stream"] }
+fastrand = "2.0.2"
+futures = "0.3.30"
+ratatui = "0.26.1"
+tokio = { version = "1.37.0", features = ["full"] }
+tui-big-text = "0.4.2"
+
+[profile.release]
+strip = true
+lto = true
+panic = "abort"
+codegen-units = 1
+
+[features]
+_dev = []
