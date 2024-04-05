@@ -1,0 +1,15 @@
+edition = "2021"
+version = "Two"
+unstable_features = true
+max_width = 80
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
+use_field_init_shorthand = true
+wrap_comments = true
+hard_tabs = true
+combine_control_expr = false
+newline_style = "Unix"
+struct_lit_single_line = false
+single_line_if_else_max_width = 0
+single_line_let_else_max_width = 0
+force_multiline_blocks = true
