@@ -7,9 +7,9 @@ use ratatui::{
 use tui_big_text::{BigText, PixelSize};
 
 use super::{list::list, utils::centered_rect};
-use crate::{consts::APP_NAME, state::State};
+use crate::{consts::APP_NAME, state::ListState};
 
-pub fn start_menu(f: &mut Frame, rect: Rect, state: &State) {
+pub fn start_menu(f: &mut Frame, rect: Rect, list_state: &ListState) {
 	let outer_area = centered_rect(
 		rect,
 		Constraint::Percentage(60),
@@ -52,19 +52,5 @@ pub fn start_menu(f: &mut Frame, rect: Rect, state: &State) {
 
 	f.render_widget(title, title_area);
 
-	if state.played {
-		list(
-			f,
-			chunks[1],
-			["CONTINUE", "NEW GAME", "SCORES", "QUIT"],
-			state.start_menu_selected,
-		);
-	} else {
-		list(
-			f,
-			chunks[1],
-			["NEW GAME", "SCORES", "QUIT"],
-			state.start_menu_selected,
-		);
-	};
+	list(f, chunks[1], list_state);
 }

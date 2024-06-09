@@ -1,13 +1,13 @@
 mod list;
 mod matrix;
-mod popup_menu;
+mod pause_menu;
 mod scores;
 mod sidebar;
 mod start_menu;
 mod utils;
 
 use matrix::matrix;
-use popup_menu::popup_menu;
+use pause_menu::pause_menu;
 use ratatui::{
 	layout::{Constraint, Flex, Layout},
 	Frame,
@@ -30,7 +30,7 @@ pub fn ui(f: &mut Frame, state: &State) {
 	let screen = f.size();
 
 	if matches!(state.currently_screen, CurrentlyScreen::StartMenu) {
-		start_menu(f, screen, state);
+		start_menu(f, screen, &state.start_menu);
 
 		if state.show_scores {
 			scores(f, state);
@@ -84,7 +84,7 @@ pub fn ui(f: &mut Frame, state: &State) {
 	sidebar(f, right_area, state, cell_height, cell_width);
 
 	if state.paused {
-		popup_menu(f, state);
+		pause_menu(f, &state.pause_menu);
 	}
 
 	if state.show_scores {

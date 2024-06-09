@@ -4,13 +4,13 @@ use super::{
 	list::list,
 	utils::{centered_rect, rounded_block},
 };
-use crate::state::State;
+use crate::state::ListState;
 
-pub fn popup_menu(f: &mut Frame, state: &State) {
+pub fn pause_menu(f: &mut Frame, list_state: &ListState) {
 	let area =
 		centered_rect(f.size(), Constraint::Length(44), Constraint::Length(24));
 
-	let block = rounded_block(Some("MENU"));
+	let block = rounded_block(Some("PAUSED"));
 
 	let block_inner = block.inner(area);
 
@@ -18,10 +18,5 @@ pub fn popup_menu(f: &mut Frame, state: &State) {
 
 	f.render_widget(block, area);
 
-	list(
-		f,
-		block_inner,
-		["CONTINUE", "NEW GAME", "SCORES", "QUIT"],
-		state.popup_menu_selected,
-	);
+	list(f, block_inner, list_state);
 }

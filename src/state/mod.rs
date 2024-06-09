@@ -1,7 +1,11 @@
 mod bag;
+mod consts;
+mod list;
 mod tetromino;
 
 use bag::Bag;
+use consts::{start_or_pause_menu_idx, START_OR_PAUSE_MENU_ITEMS};
+pub use list::ListState;
 use tetromino::Tetromino;
 pub use tetromino::TetrominoKind;
 
@@ -35,23 +39,22 @@ pub struct State {
 	bag: Bag,
 	pub running: bool,
 	pub paused: bool,
-	pub played: bool,
 	pub level: u8,
 	pub score: u32,
 	pub lines: u32,
 	pub currently_screen: CurrentlyScreen,
-	pub start_menu_selected: usize,
 	pub scores: Vec<u32>,
 	pub show_scores: bool,
-	pub popup_menu_selected: usize,
 	lock_start: bool,
+	pub start_menu: ListState,
+	pub pause_menu: ListState,
 }
 
 impl State {
 	pub fn new(tx: Sender) -> Self {
 		let mut bag = Bag::new();
 
-		Self {
+		let mut state = Self {
 			tx,
 			tm_board: [[TetrominoKind::None; MATRIX_Y_LEN]; MATRIX_X_LEN],
 			preview_tm_board: [[TetrominoKind::None; PREVIEW_MATRIX_Y_LEN];
@@ -62,24 +65,30 @@ impl State {
 			bag,
 			running: true,
 			paused: true,
-			played: false,
 			level: u8::MAX,
 			score: u32::MAX,
 			lines: u32::MAX,
 			currently_screen: CurrentlyScreen::StartMenu,
-			start_menu_selected: 0,
 			scores: vec![u32::MAX; 10],
 			show_scores: false,
-			popup_menu_selected: 0,
 			lock_start: false,
+			start_menu: ListState::new(&START_OR_PAUSE_MENU_ITEMS),
+			pause_menu: ListState::new(&START_OR_PAUSE_MENU_ITEMS),
+		};
+
+		let save_loaded = false;
+		if !save_loaded {
+			state.start_menu.hide(start_or_pause_menu_idx::CONTINUE);
 		}
+
+		state
 	}
 
 	pub fn handle_event(&mut self, event: Event) {
 		match self.currently_screen {
 			CurrentlyScreen::StartMenu => {
 				if let Event::Key(key) = event {
-					self.operate_start_menu(key);
+					self.update_start_menu(key);
 				}
 			}
 			CurrentlyScreen::GameScreen => {
@@ -92,7 +101,7 @@ impl State {
 		match event {
 			Event::Key(key) => {
 				if self.paused {
-					self.operate_popup_menu(key);
+					self.update_pause_menu(key);
 					return;
 				}
 				match key {
@@ -128,44 +137,28 @@ impl State {
 		};
 	}
 
-	fn operate_start_menu(&mut self, key: KeyEvent) {
-		let end_idx = if self.played {
-			3
-		} else {
-			2
-		};
+	fn update_start_menu(&mut self, key: KeyEvent) {
+		use start_or_pause_menu_idx::*;
+
 		match key {
 			KeyEvent::Up => {
-				if self.start_menu_selected == 0 {
-					self.start_menu_selected = end_idx;
-				} else {
-					self.start_menu_selected -= 1;
-				}
+				self.start_menu.up();
 			}
 			KeyEvent::Down => {
-				if self.start_menu_selected == end_idx {
-					self.start_menu_selected = 0;
-				} else {
-					self.start_menu_selected += 1;
-				}
+				self.start_menu.down();
 			}
 			KeyEvent::Enter | KeyEvent::Space => {
-				let offest = if self.played {
-					0
-				} else {
-					1
-				};
-				match self.start_menu_selected + offest {
-					menu_mapping::CONTINUE => {
+				match self.start_menu.cursor {
+					CONTINUE => {
 						self.currently_screen = CurrentlyScreen::GameScreen;
 					}
-					menu_mapping::NEW_GAME => {
+					NEW_GAME => {
 						self.new_game();
 					}
-					menu_mapping::SCORES => {
+					SCORES => {
 						self.show_scores = true;
 					}
-					menu_mapping::QUIT => {
+					QUIT => {
 						self.running = false;
 					}
 					_ => (),
@@ -182,34 +175,28 @@ impl State {
 		}
 	}
 
-	fn operate_popup_menu(&mut self, key: KeyEvent) {
+	fn update_pause_menu(&mut self, key: KeyEvent) {
+		use start_or_pause_menu_idx::*;
+
 		match key {
 			KeyEvent::Up => {
-				if self.popup_menu_selected == 0 {
-					self.popup_menu_selected = 3;
-				} else {
-					self.popup_menu_selected -= 1;
-				}
+				self.pause_menu.up();
 			}
 			KeyEvent::Down => {
-				if self.popup_menu_selected == 3 {
-					self.popup_menu_selected = 0;
-				} else {
-					self.popup_menu_selected += 1;
-				}
+				self.pause_menu.down();
 			}
 			KeyEvent::Enter | KeyEvent::Space => {
-				match self.popup_menu_selected {
-					menu_mapping::CONTINUE => {
+				match self.pause_menu.cursor {
+					CONTINUE => {
 						self.cancel_pause();
 					}
-					menu_mapping::NEW_GAME => {
+					NEW_GAME => {
 						self.new_game();
 					}
-					menu_mapping::SCORES => {
+					SCORES => {
 						self.show_scores = true;
 					}
-					menu_mapping::QUIT => {
+					QUIT => {
 						self.running = false;
 					}
 					_ => (),
@@ -220,7 +207,7 @@ impl State {
 					self.show_scores = false;
 				} else {
 					self.cancel_pause();
-					self.popup_menu_selected = 0;
+					self.pause_menu.reset();
 				}
 			}
 			_ => (),
@@ -233,7 +220,6 @@ impl State {
 		self.next_active_tm();
 		self.paused = false;
 		self.send(Event::AutoDropStart);
-		self.played = true;
 		self.currently_screen = CurrentlyScreen::GameScreen;
 	}
 
@@ -391,11 +377,4 @@ impl State {
 		self.paused = false;
 		self.send(Event::CancelPause);
 	}
-}
-
-mod menu_mapping {
-	pub const CONTINUE: usize = 0;
-	pub const NEW_GAME: usize = 1;
-	pub const SCORES: usize = 2;
-	pub const QUIT: usize = 3;
 }
