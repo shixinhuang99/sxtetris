@@ -1,8 +1,8 @@
-default:
-	just --list --unsorted
-
 alias rp := release-pr
 alias pt := push-tag
+
+default:
+	just --list --unsorted
 
 fmt:
 	cargo fmt --all
