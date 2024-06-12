@@ -4,7 +4,9 @@ mod list;
 mod tetromino;
 
 use bag::Bag;
-use consts::{start_or_pause_menu_idx, START_OR_PAUSE_MENU_ITEMS};
+use consts::{
+	pause_menu_idx, start_menu_idx, PAUSE_MENU_ITEMS, START_MENU_ITEMS,
+};
 pub use list::ListState;
 use tetromino::Tetromino;
 pub use tetromino::TetrominoKind;
@@ -54,7 +56,7 @@ impl State {
 	pub fn new(tx: Sender) -> Self {
 		let mut bag = Bag::new();
 
-		let mut state = Self {
+		let state = Self {
 			tx,
 			tm_board: [[TetrominoKind::None; MATRIX_Y_LEN]; MATRIX_X_LEN],
 			preview_tm_board: [[TetrominoKind::None; PREVIEW_MATRIX_Y_LEN];
@@ -72,14 +74,9 @@ impl State {
 			scores: vec![u32::MAX; 10],
 			show_scores: false,
 			lock_start: false,
-			start_menu: ListState::new(&START_OR_PAUSE_MENU_ITEMS),
-			pause_menu: ListState::new(&START_OR_PAUSE_MENU_ITEMS),
+			start_menu: ListState::new(&START_MENU_ITEMS),
+			pause_menu: ListState::new(&PAUSE_MENU_ITEMS),
 		};
-
-		let save_loaded = false;
-		if !save_loaded {
-			state.start_menu.hide(start_or_pause_menu_idx::CONTINUE);
-		}
 
 		state
 	}
@@ -138,7 +135,7 @@ impl State {
 	}
 
 	fn update_start_menu(&mut self, key: KeyEvent) {
-		use start_or_pause_menu_idx::*;
+		use start_menu_idx::*;
 
 		match key {
 			KeyEvent::Up => {
@@ -149,10 +146,7 @@ impl State {
 			}
 			KeyEvent::Enter | KeyEvent::Space => {
 				match self.start_menu.cursor {
-					CONTINUE => {
-						self.currently_screen = CurrentlyScreen::GameScreen;
-					}
-					NEW_GAME => {
+					PLAY => {
 						self.new_game();
 					}
 					SCORES => {
@@ -176,7 +170,7 @@ impl State {
 	}
 
 	fn update_pause_menu(&mut self, key: KeyEvent) {
-		use start_or_pause_menu_idx::*;
+		use pause_menu_idx::*;
 
 		match key {
 			KeyEvent::Up => {
@@ -187,7 +181,7 @@ impl State {
 			}
 			KeyEvent::Enter | KeyEvent::Space => {
 				match self.pause_menu.cursor {
-					CONTINUE => {
+					RESUME => {
 						self.cancel_pause();
 					}
 					NEW_GAME => {
