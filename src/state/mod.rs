@@ -1,40 +1,34 @@
 mod bag;
+mod board;
 mod consts;
 mod list;
 mod tetromino;
 
 use bag::Bag;
+pub use board::BoardState;
 use consts::{
 	pause_menu_idx, start_menu_idx, PAUSE_MENU_ITEMS, START_MENU_ITEMS,
 };
 pub use list::ListState;
-use tetromino::Tetromino;
 pub use tetromino::TetrominoKind;
+use tetromino::{Tetromino, TetrominoAction};
 
 use crate::{
 	channel::{Event, KeyEvent, Sender},
 	consts::{
-		MATRIX_X_LEN, MATRIX_Y_LEN, PREVIEW_MATRIX_X_LEN, PREVIEW_MATRIX_Y_LEN,
+		BOARD_X_LEN, BOARD_Y_LEN, PREVIEW_BOARD_X_LEN, PREVIEW_BOARD_Y_LEN,
 	},
 };
 
-enum TetrominoAction {
-	Left,
-	Right,
-	SoftDrop,
-	HardDrop,
-}
-
 pub enum CurrentlyScreen {
 	StartMenu,
-	GameScreen,
+	Game,
 }
 
 pub struct State {
 	tx: Sender,
-	tm_board: [[TetrominoKind; MATRIX_Y_LEN]; MATRIX_X_LEN],
-	preview_tm_board:
-		[[TetrominoKind; PREVIEW_MATRIX_Y_LEN]; PREVIEW_MATRIX_X_LEN],
+	pub board: BoardState,
+	pub preview_board: BoardState,
 	active_tm: Tetromino,
 	ghost_tm: Tetromino,
 	preview_tm: Tetromino,
@@ -58,9 +52,11 @@ impl State {
 
 		let state = Self {
 			tx,
-			tm_board: [[TetrominoKind::None; MATRIX_Y_LEN]; MATRIX_X_LEN],
-			preview_tm_board: [[TetrominoKind::None; PREVIEW_MATRIX_Y_LEN];
-				PREVIEW_MATRIX_X_LEN],
+			board: BoardState::new(BOARD_Y_LEN, BOARD_X_LEN),
+			preview_board: BoardState::new(
+				PREVIEW_BOARD_Y_LEN,
+				PREVIEW_BOARD_X_LEN,
+			),
 			active_tm: Tetromino::default(),
 			ghost_tm: Tetromino::new(TetrominoKind::Ghost),
 			preview_tm: Tetromino::new_without_offest(bag.next()),
@@ -81,6 +77,14 @@ impl State {
 		state
 	}
 
+	pub fn new_game(&mut self) {
+		*self = Self::new(self.tx.clone());
+		self.next_active_tm();
+		self.paused = false;
+		self.send(Event::AutoDropStart);
+		self.currently_screen = CurrentlyScreen::Game;
+	}
+
 	pub fn handle_event(&mut self, event: Event) {
 		match self.currently_screen {
 			CurrentlyScreen::StartMenu => {
@@ -88,13 +92,13 @@ impl State {
 					self.update_start_menu(key);
 				}
 			}
-			CurrentlyScreen::GameScreen => {
-				self.operate_game(event);
+			CurrentlyScreen::Game => {
+				self.update_game(event);
 			}
 		}
 	}
 
-	fn operate_game(&mut self, event: Event) {
+	fn update_game(&mut self, event: Event) {
 		match event {
 			Event::Key(key) => {
 				if self.paused {
@@ -208,27 +212,6 @@ impl State {
 		}
 	}
 
-	pub fn new_game(&mut self) {
-		let tx = self.tx.clone();
-		*self = Self::new(tx);
-		self.next_active_tm();
-		self.paused = false;
-		self.send(Event::AutoDropStart);
-		self.currently_screen = CurrentlyScreen::GameScreen;
-	}
-
-	pub fn tm_board_mapping(&self, x: usize, y: usize) -> &TetrominoKind {
-		&self.tm_board[x][y]
-	}
-
-	pub fn perview_tm_board_mapping(
-		&self,
-		x: usize,
-		y: usize,
-	) -> &TetrominoKind {
-		&self.preview_tm_board[x][y]
-	}
-
 	fn move_active_tm(&mut self, tm_action: TetrominoAction) {
 		if let TetrominoKind::None = self.active_tm.kind {
 			return;
@@ -260,30 +243,32 @@ impl State {
 
 	fn update_active_tm(&mut self, tm: Tetromino) {
 		for p in &self.active_tm.pos {
-			self.tm_board[p.0][p.1] = TetrominoKind::None;
+			self.board.update_cell(TetrominoKind::None, p.0, p.1);
 		}
 
 		self.active_tm = tm;
 
 		for p in &self.active_tm.pos {
-			self.tm_board[p.0][p.1] = self.active_tm.kind;
+			self.board.update_cell(self.active_tm.kind, p.0, p.1);
 		}
 	}
 
 	fn next_active_tm(&mut self) {
 		for pos in &self.preview_tm.pos {
-			self.preview_tm_board[pos.0][pos.1] = TetrominoKind::None;
+			self.preview_board
+				.update_cell(TetrominoKind::None, pos.0, pos.1);
 		}
 
 		self.active_tm = Tetromino::new(self.preview_tm.kind);
 		self.preview_tm = Tetromino::new_without_offest(self.bag.next());
 
 		for pos in &self.active_tm.pos {
-			self.tm_board[pos.0][pos.1] = self.active_tm.kind;
+			self.board.update_cell(self.active_tm.kind, pos.0, pos.1);
 		}
 
 		for pos in &self.preview_tm.pos {
-			self.preview_tm_board[pos.0][pos.1] = self.preview_tm.kind;
+			self.preview_board
+				.update_cell(self.preview_tm.kind, pos.0, pos.1);
 		}
 
 		self.move_ghost_tm();
@@ -291,17 +276,17 @@ impl State {
 
 	fn update_ghost_tm(&mut self, tm: Tetromino) {
 		for pos in &self.ghost_tm.pos {
-			let kind = &mut self.tm_board[pos.0][pos.1];
+			let kind = self.board.get_cell(pos.0, pos.1);
 			if !matches!(kind, TetrominoKind::None | TetrominoKind::Ghost) {
 				continue;
 			}
-			*kind = TetrominoKind::None;
+			self.board.update_cell(TetrominoKind::None, pos.0, pos.1);
 		}
 
 		self.ghost_tm = tm;
 
 		for p in &self.ghost_tm.pos {
-			self.tm_board[p.0][p.1] = TetrominoKind::Ghost;
+			self.board.update_cell(TetrominoKind::Ghost, p.0, p.1);
 		}
 	}
 
@@ -352,7 +337,7 @@ impl State {
 				return false;
 			}
 			!matches!(
-				&self.tm_board[pos.0][pos.1],
+				self.board.get_cell(pos.0, pos.1),
 				TetrominoKind::None | TetrominoKind::Ghost
 			)
 		})

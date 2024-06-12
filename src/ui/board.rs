@@ -8,32 +8,48 @@ use ratatui::{
 };
 
 use super::utils::rounded_block;
-use crate::state::TetrominoKind;
+use crate::state::{BoardState, TetrominoKind};
 
-pub fn matrix<'a, F, const Y: usize, const X: usize>(
+pub fn board(
 	f: &mut Frame,
 	rect: Rect,
-	v_constraints: [Constraint; Y],
-	h_constraints: [Constraint; X],
-	hidden_none: bool,
-	tm_kind_getter: F,
-) where
-	F: Fn(usize, usize) -> &'a TetrominoKind,
-{
-	let vertical_chunks = Layout::vertical(v_constraints).areas::<Y>(rect);
+	board_state: &BoardState,
+	cell_height: u16,
+	cell_width: u16,
+	is_main_board: bool,
+) {
+	let rows = if is_main_board {
+		board_state.rows / 2
+	} else {
+		board_state.rows
+	};
 
-	for (y, vertical_area) in vertical_chunks.into_iter().enumerate() {
+	let vertical_chunks =
+		Layout::vertical(vec![Constraint::Length(cell_height); rows])
+			.split(rect);
+
+	for (y, vertical_area) in vertical_chunks.iter().enumerate() {
 		let horinzontal_chunks =
-			Layout::horizontal(h_constraints).areas::<X>(vertical_area);
+			Layout::horizontal(vec![
+				Constraint::Length(cell_width);
+				board_state.cols
+			])
+			.split(*vertical_area);
 
-		for (x, horizontal_area) in horinzontal_chunks.into_iter().enumerate() {
-			let tetromino_kind = tm_kind_getter(x, y);
+		for (x, horizontal_area) in horinzontal_chunks.iter().enumerate() {
+			let y_with_offest = if is_main_board {
+				y + rows
+			} else {
+				y
+			};
 
-			let style = create_style(tetromino_kind);
+			let tm_kind = board_state.get_cell(x, y_with_offest);
+
+			let style = create_style(tm_kind);
 
 			let mut b = rounded_block(None).border_style(style);
 
-			if hidden_none && matches!(tetromino_kind, TetrominoKind::None) {
+			if !is_main_board && *tm_kind == TetrominoKind::None {
 				b = b.borders(Borders::NONE);
 			}
 
@@ -41,14 +57,12 @@ pub fn matrix<'a, F, const Y: usize, const X: usize>(
 			{
 				b = b
 					.title_top(x.to_string())
-					.title_bottom((y + vertical_chunks.len()).to_string());
+					.title_bottom(y_with_offest.to_string());
 			}
 
-			let p = Paragraph::new(create_text(tetromino_kind))
-				.block(b)
-				.style(style);
+			let p = Paragraph::new(create_text(tm_kind)).block(b).style(style);
 
-			f.render_widget(p, horizontal_area);
+			f.render_widget(p, *horizontal_area);
 		}
 	}
 }

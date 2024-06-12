@@ -1,9 +1,10 @@
-use crate::consts::{MATRIX_X_LEN, MATRIX_Y_LEN, MATRIX_Y_VISIBLE_LEN};
+use crate::consts::{BOARD_VISIBLE_Y_LEN, BOARD_X_LEN, BOARD_Y_LEN};
 
-const MAX_X: usize = MATRIX_X_LEN - 1;
-const MAX_Y: usize = MATRIX_Y_LEN - 1;
+const MAX_X: usize = BOARD_X_LEN - 1;
 
-#[derive(Clone, Copy)]
+const MAX_Y: usize = BOARD_Y_LEN - 1;
+
+#[derive(Clone, Copy, PartialEq)]
 pub enum TetrominoKind {
 	I,
 	/// ```
@@ -63,6 +64,13 @@ impl From<TetrominoKind> for char {
 	}
 }
 
+pub enum TetrominoAction {
+	Left,
+	Right,
+	SoftDrop,
+	HardDrop,
+}
+
 #[derive(Clone)]
 enum RotateDeg {
 	Zero,
@@ -83,7 +91,7 @@ impl Tetromino {
 		let mut this = Self::new_without_offest(kind);
 
 		for p in &mut this.pos {
-			p.1 += MATRIX_Y_VISIBLE_LEN;
+			p.1 += BOARD_VISIBLE_Y_LEN;
 		}
 
 		this

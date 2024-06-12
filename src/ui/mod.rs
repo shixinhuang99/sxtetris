@@ -1,30 +1,31 @@
+mod board;
 mod list;
-mod matrix;
 mod pause_menu;
 mod scores;
 mod sidebar;
 mod start_menu;
 mod utils;
 
-use matrix::matrix;
+use board::board;
 use pause_menu::pause_menu;
 use ratatui::{
 	layout::{Constraint, Flex, Layout},
 	Frame,
 };
-#[cfg(feature = "_dev")]
-use ratatui::{text::Line, widgets::Paragraph};
 use scores::scores;
 use sidebar::sidebar;
 use start_menu::start_menu;
 
 use crate::{
 	consts::{
-		MATRIX_X_LEN, MATRIX_X_LEN_U16, MATRIX_Y_VISIBLE_LEN,
-		MATRIX_Y_VISIBLE_LEN_U16, MIN_CELL_HEIGHT, MIN_CELL_WIDTH,
+		BOARD_VISIBLE_Y_LEN, BOARD_X_LEN, MIN_CELL_HEIGHT, MIN_CELL_WIDTH,
 	},
 	state::{CurrentlyScreen, State},
 };
+
+const MATRIX_Y_VISIBLE_LEN_U16: u16 = BOARD_VISIBLE_Y_LEN as u16;
+
+const MATRIX_X_LEN_U16: u16 = BOARD_X_LEN as u16;
 
 pub fn ui(f: &mut Frame, state: &State) {
 	let screen = f.size();
@@ -42,13 +43,7 @@ pub fn ui(f: &mut Frame, state: &State) {
 	let (cell_height, cell_width) = calc_cell_size(screen.height);
 
 	#[cfg(feature = "_dev")]
-	f.render_widget(
-		Paragraph::new(vec![
-			Line::raw(format!("cell_height: {}", cell_height)),
-			Line::raw(format!("cell_width: {}", cell_width)),
-		]),
-		screen,
-	);
+	log::trace!("cell_height: {}, cell_width: {}", cell_height, cell_width);
 
 	let vertical_area = Layout::vertical([Constraint::Length(
 		cell_height * MATRIX_Y_VISIBLE_LEN_U16,
@@ -72,14 +67,7 @@ pub fn ui(f: &mut Frame, state: &State) {
 			.flex(Flex::Start)
 			.areas::<1>(horizontal_area[1])[0];
 
-	matrix(
-		f,
-		left_area,
-		[Constraint::Length(cell_height); MATRIX_Y_VISIBLE_LEN],
-		[Constraint::Length(cell_width); MATRIX_X_LEN],
-		false,
-		|x, y| state.tm_board_mapping(x, y + MATRIX_Y_VISIBLE_LEN),
-	);
+	board(f, left_area, &state.board, cell_height, cell_width, true);
 
 	sidebar(f, right_area, state, cell_height, cell_width);
 

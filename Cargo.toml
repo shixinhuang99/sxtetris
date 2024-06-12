@@ -15,7 +15,9 @@ anyhow = "1.0.81"
 crossterm = { version = "0.27.0", features = ["event-stream"] }
 fastrand = "2.0.2"
 futures = "0.3.30"
+log = { version = "0.4.21", optional = true }
 ratatui = "0.26.1"
+simplelog = { version = "0.12.2", optional = true }
 tokio = { version = "1.37.0", features = ["full"] }
 tui-big-text = "0.4.2"
 
@@ -26,4 +28,4 @@ panic = "abort"
 codegen-units = 1
 
 [features]
-_dev = []
+_dev = ["dep:log", "dep:simplelog"]
