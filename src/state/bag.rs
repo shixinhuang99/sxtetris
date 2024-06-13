@@ -1,14 +1,22 @@
 use super::TetrominoKind;
 
 pub struct Bag {
-	value: [char; 7],
+	value: [TetrominoKind; 7],
 	cursor: usize,
 }
 
 impl Bag {
 	pub fn new() -> Self {
 		let mut this = Self {
-			value: ['I', 'J', 'L', 'O', 'S', 'T', 'Z'],
+			value: [
+				TetrominoKind::I,
+				TetrominoKind::J,
+				TetrominoKind::L,
+				TetrominoKind::O,
+				TetrominoKind::S,
+				TetrominoKind::T,
+				TetrominoKind::Z,
+			],
 			cursor: 0,
 		};
 
@@ -26,8 +34,9 @@ impl Bag {
 			self.shuffle();
 			self.cursor = 0;
 		}
-		let ch = self.value[self.cursor];
+		let tm_kind = self.value[self.cursor];
 		self.cursor += 1;
-		TetrominoKind::from(ch)
+
+		tm_kind
 	}
 }

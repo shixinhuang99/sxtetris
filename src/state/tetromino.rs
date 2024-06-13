@@ -1,8 +1,5 @@
-use crate::consts::{BOARD_VISIBLE_Y_LEN, BOARD_X_LEN, BOARD_Y_LEN};
-
-const MAX_X: usize = BOARD_X_LEN - 1;
-
-const MAX_Y: usize = BOARD_Y_LEN - 1;
+use super::position::Position;
+use crate::consts::BOARD_VISIBLE_Y_LEN;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum TetrominoKind {
@@ -64,6 +61,7 @@ impl From<TetrominoKind> for char {
 	}
 }
 
+#[derive(PartialEq)]
 pub enum TetrominoAction {
 	Left,
 	Right,
@@ -82,23 +80,21 @@ enum RotateDeg {
 #[derive(Clone)]
 pub struct Tetromino {
 	pub kind: TetrominoKind,
-	pub pos: [(usize, usize); 4],
+	pub position: Position,
 	rotate_deg: RotateDeg,
 }
 
 impl Tetromino {
 	pub fn new(kind: TetrominoKind) -> Self {
-		let mut this = Self::new_without_offest(kind);
+		let mut tm = Self::new_preview(kind);
 
-		for p in &mut this.pos {
-			p.1 += BOARD_VISIBLE_Y_LEN;
-		}
+		tm.position.update(|p| p.1 += BOARD_VISIBLE_Y_LEN);
 
-		this
+		tm
 	}
 
-	pub fn new_without_offest(kind: TetrominoKind) -> Self {
-		let pos = match kind {
+	pub fn new_preview(kind: TetrominoKind) -> Self {
+		let points = match kind {
 			TetrominoKind::I => [(3, 1), (4, 1), (5, 1), (6, 1)],
 			TetrominoKind::J => [(3, 0), (3, 1), (4, 1), (5, 1)],
 			TetrominoKind::L => [(5, 0), (3, 1), (4, 1), (5, 1)],
@@ -111,56 +107,49 @@ impl Tetromino {
 
 		Self {
 			kind,
-			pos,
+			position: Position::new(points),
 			rotate_deg: RotateDeg::Zero,
 		}
 	}
 
 	pub fn up(&mut self) -> bool {
-		if self.pos.iter().any(|p| p.1 == 0) {
-			return true;
+		if self.position.is_touched_top() {
+			true
+		} else {
+			self.position.update(|p| p.1 -= 1);
+			false
 		}
-		for pos in &mut self.pos {
-			pos.1 -= 1;
-		}
-		false
 	}
 
 	pub fn down(&mut self) -> bool {
-		if self.pos.iter().any(|p| p.1 == MAX_Y) {
-			return true;
+		if self.position.is_touched_bottom() {
+			true
+		} else {
+			self.position.update(|p| p.1 += 1);
+			false
 		}
-		for pos in &mut self.pos {
-			pos.1 += 1;
-		}
-		false
 	}
 
 	pub fn left(&mut self) -> bool {
-		if self.pos.iter().any(|p| p.0 == 0) {
-			return true;
+		if self.position.is_touched_left() {
+			true
+		} else {
+			self.position.update(|p| p.0 -= 1);
+			false
 		}
-		for pos in &mut self.pos {
-			pos.0 -= 1;
-		}
-		false
 	}
 
 	pub fn right(&mut self) -> bool {
-		if self.pos.iter().any(|p| p.0 == MAX_X) {
-			return true;
+		if self.position.is_touched_right() {
+			true
+		} else {
+			self.position.update(|p| p.0 += 1);
+			false
 		}
-		for pos in &mut self.pos {
-			pos.0 += 1;
-		}
-		false
 	}
 
-	pub fn same_position(&self, rhs: &Self) -> bool {
-		self.pos
-			.iter()
-			.enumerate()
-			.all(|(idx, p)| p == &rhs.pos[idx])
+	pub fn same_position(&self, other: &Self) -> bool {
+		self.position == other.position
 	}
 
 	fn rotate(&mut self) {

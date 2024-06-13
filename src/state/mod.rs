@@ -2,6 +2,7 @@ mod bag;
 mod board;
 mod consts;
 mod list;
+mod position;
 mod tetromino;
 
 use bag::Bag;
@@ -59,7 +60,7 @@ impl State {
 			),
 			active_tm: Tetromino::default(),
 			ghost_tm: Tetromino::new(TetrominoKind::Ghost),
-			preview_tm: Tetromino::new_without_offest(bag.next()),
+			preview_tm: Tetromino::new_preview(bag.next()),
 			bag,
 			running: true,
 			paused: true,
@@ -79,7 +80,7 @@ impl State {
 
 	pub fn new_game(&mut self) {
 		*self = Self::new(self.tx.clone());
-		self.next_active_tm();
+		self.gen_next_active_tm();
 		self.paused = false;
 		self.send(Event::AutoDropStart);
 		self.currently_screen = CurrentlyScreen::Game;
@@ -132,7 +133,7 @@ impl State {
 			}
 			Event::LockEnd => {
 				self.lock_start = false;
-				self.next_active_tm();
+				self.gen_next_active_tm();
 			}
 			_ => (),
 		};
@@ -213,7 +214,7 @@ impl State {
 	}
 
 	fn move_active_tm(&mut self, tm_action: TetrominoAction) {
-		if let TetrominoKind::None = self.active_tm.kind {
+		if self.active_tm.kind == TetrominoKind::None {
 			return;
 		}
 
@@ -232,8 +233,8 @@ impl State {
 		}
 
 		if self.active_tm.same_position(&self.ghost_tm) {
-			if let TetrominoAction::HardDrop = tm_action {
-				self.next_active_tm();
+			if tm_action == TetrominoAction::HardDrop {
+				self.gen_next_active_tm();
 			} else {
 				self.lock_start = true;
 				self.send(Event::LockReset);
@@ -242,52 +243,33 @@ impl State {
 	}
 
 	fn update_active_tm(&mut self, tm: Tetromino) {
-		for p in &self.active_tm.pos {
-			self.board.update_cell(TetrominoKind::None, p.0, p.1);
-		}
-
+		self.board.clear_area(&self.active_tm.position);
+		self.board.update_area(&tm.position, tm.kind);
 		self.active_tm = tm;
-
-		for p in &self.active_tm.pos {
-			self.board.update_cell(self.active_tm.kind, p.0, p.1);
-		}
 	}
 
-	fn next_active_tm(&mut self) {
-		for pos in &self.preview_tm.pos {
-			self.preview_board
-				.update_cell(TetrominoKind::None, pos.0, pos.1);
-		}
+	fn gen_next_active_tm(&mut self) {
+		self.preview_board.clear_area(&self.preview_tm.position);
 
-		self.active_tm = Tetromino::new(self.preview_tm.kind);
-		self.preview_tm = Tetromino::new_without_offest(self.bag.next());
+		let active_tm = Tetromino::new(self.preview_tm.kind);
+		let preview_tm = Tetromino::new_preview(self.bag.next());
 
-		for pos in &self.active_tm.pos {
-			self.board.update_cell(self.active_tm.kind, pos.0, pos.1);
-		}
+		self.board.update_area(&active_tm.position, active_tm.kind);
+		self.preview_board
+			.update_area(&preview_tm.position, preview_tm.kind);
 
-		for pos in &self.preview_tm.pos {
-			self.preview_board
-				.update_cell(self.preview_tm.kind, pos.0, pos.1);
-		}
+		self.active_tm = active_tm;
+		self.preview_tm = preview_tm;
 
 		self.move_ghost_tm();
 	}
 
 	fn update_ghost_tm(&mut self, tm: Tetromino) {
-		for pos in &self.ghost_tm.pos {
-			let kind = self.board.get_cell(pos.0, pos.1);
-			if !matches!(kind, TetrominoKind::None | TetrominoKind::Ghost) {
-				continue;
-			}
-			self.board.update_cell(TetrominoKind::None, pos.0, pos.1);
-		}
-
+		self.board.clear_area_if(&self.ghost_tm.position, |kind| {
+			matches!(kind, TetrominoKind::None | TetrominoKind::Ghost)
+		});
+		self.board.update_area(&tm.position, TetrominoKind::Ghost);
 		self.ghost_tm = tm;
-
-		for p in &self.ghost_tm.pos {
-			self.board.update_cell(TetrominoKind::Ghost, p.0, p.1);
-		}
 	}
 
 	fn move_ghost_tm(&mut self) {
@@ -311,7 +293,7 @@ impl State {
 		&mut self,
 		tm_action: &TetrominoAction,
 	) -> Option<Tetromino> {
-		if let TetrominoAction::HardDrop = tm_action {
+		if *tm_action == TetrominoAction::HardDrop {
 			return Some(self.ghost_tm.clone());
 		}
 
@@ -332,12 +314,18 @@ impl State {
 	}
 
 	fn is_collision(&self, tm: &Tetromino) -> bool {
-		tm.pos.iter().any(|pos| {
-			if self.active_tm.pos.iter().any(|l_pos| pos == l_pos) {
+		tm.position.points.iter().any(|p| {
+			if self
+				.active_tm
+				.position
+				.points
+				.iter()
+				.any(|other| p.0 == other.0 && p.1 == other.1)
+			{
 				return false;
 			}
 			!matches!(
-				self.board.get_cell(pos.0, pos.1),
+				self.board.get_cell(p.0, p.1),
 				TetrominoKind::None | TetrominoKind::Ghost
 			)
 		})
