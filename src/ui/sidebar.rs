@@ -6,11 +6,8 @@ use ratatui::{
 };
 use tui_big_text::{BigText, PixelSize};
 
-use super::{matrix::matrix, utils::rounded_block};
-use crate::{
-	consts::{PREVIEW_MATRIX_X_LEN, PREVIEW_MATRIX_Y_LEN},
-	state::State,
-};
+use super::{board::board, utils::rounded_block};
+use crate::state::State;
 
 pub fn sidebar(
 	f: &mut Frame,
@@ -30,20 +27,20 @@ pub fn sidebar(
 
 	let chunks_0 = Layout::vertical([
 		Constraint::Length(4),
-		Constraint::Length(cell_height * (PREVIEW_MATRIX_Y_LEN as u16) + 1),
+		Constraint::Length(cell_height * (state.preview_board.rows as u16) + 1),
 	])
 	.spacing(1)
 	.flex(Flex::Center)
 	.areas::<2>(vertical_chunks[0]);
 
 	render_text(f, "NEXT".to_string(), chunks_0[0], Color::LightBlue);
-	matrix(
+	board(
 		f,
 		chunks_0[1],
-		[Constraint::Length(cell_height); PREVIEW_MATRIX_Y_LEN],
-		[Constraint::Length(cell_width); PREVIEW_MATRIX_X_LEN],
-		true,
-		|x, y| state.perview_tm_board_mapping(x, y),
+		&state.preview_board,
+		cell_height,
+		cell_width,
+		false,
 	);
 
 	let chunks_1 = create_text_chunks(vertical_chunks[1]);

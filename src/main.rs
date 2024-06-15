@@ -11,6 +11,14 @@ use app::App;
 
 #[tokio::main]
 async fn main() {
+	#[cfg(feature = "_dev")]
+	simplelog::WriteLogger::init(
+		simplelog::LevelFilter::Trace,
+		simplelog::Config::default(),
+		std::fs::File::create("trace.log").unwrap(),
+	)
+	.unwrap();
+
 	if let Err(err) = run().await {
 		eprintln!("{}", err);
 	}
