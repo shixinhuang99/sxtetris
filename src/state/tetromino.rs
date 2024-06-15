@@ -30,20 +30,6 @@ pub enum TetrominoKind {
 	Ghost,
 }
 
-impl TetrominoKind {
-	pub fn get_init_points(&self, idx: usize) -> [Point; 4] {
-		match self {
-			TetrominoKind::I => rotate_map::I[idx],
-			TetrominoKind::J => rotate_map::J[idx],
-			TetrominoKind::L => rotate_map::L[idx],
-			TetrominoKind::S => rotate_map::S[idx],
-			TetrominoKind::T => rotate_map::T[idx],
-			TetrominoKind::Z => rotate_map::Z[idx],
-			_ => unreachable!(),
-		}
-	}
-}
-
 impl From<char> for TetrominoKind {
 	fn from(value: char) -> Self {
 		match value {
@@ -121,57 +107,33 @@ impl Tetromino {
 	}
 
 	pub fn new_preview(kind: TetrominoKind) -> Self {
-		let points = match kind {
-			TetrominoKind::I => [(3, 1), (4, 1), (5, 1), (6, 1)],
-			TetrominoKind::J => [(3, 0), (3, 1), (4, 1), (5, 1)],
-			TetrominoKind::L => [(5, 0), (3, 1), (4, 1), (5, 1)],
-			TetrominoKind::O => [(4, 0), (5, 0), (4, 1), (5, 1)],
-			TetrominoKind::S => [(4, 0), (5, 0), (3, 1), (4, 1)],
-			TetrominoKind::T => [(4, 0), (3, 1), (4, 1), (5, 1)],
-			TetrominoKind::Z => [(3, 0), (4, 0), (4, 1), (5, 1)],
-			TetrominoKind::None | TetrominoKind::Ghost => [(0, 0); 4],
-		};
+		let mut points = Points::new(get_init_points(&kind, 0));
+
+		points.update(|p| p.0 += 3);
 
 		Self {
 			kind,
-			points: Points::new(points),
+			points,
 			rotate_deg: RotateDeg::Zero,
 		}
 	}
 
-	pub fn up(&mut self) -> bool {
-		if self.points.is_touched_top() {
-			true
-		} else {
-			self.points.update(|p| p.1 -= 1);
+	pub fn walk(&mut self, action: &TetrominoAction) -> bool {
+		if match action {
+			TetrominoAction::SoftDrop => self.points.is_touched_bottom(),
+			TetrominoAction::Left => self.points.is_touched_left(),
+			TetrominoAction::Right => self.points.is_touched_right(),
+			_ => unreachable!(),
+		} {
 			false
-		}
-	}
-
-	pub fn down(&mut self) -> bool {
-		if self.points.is_touched_bottom() {
-			true
 		} else {
-			self.points.update(|p| p.1 += 1);
-			false
-		}
-	}
-
-	pub fn left(&mut self) -> bool {
-		if self.points.is_touched_left() {
+			match action {
+				TetrominoAction::SoftDrop => self.points.update(|p| p.1 += 1),
+				TetrominoAction::Left => self.points.update(|p| p.0 -= 1),
+				TetrominoAction::Right => self.points.update(|p| p.0 += 1),
+				_ => unreachable!(),
+			}
 			true
-		} else {
-			self.points.update(|p| p.0 -= 1);
-			false
-		}
-	}
-
-	pub fn right(&mut self) -> bool {
-		if self.points.is_touched_right() {
-			true
-		} else {
-			self.points.update(|p| p.0 += 1);
-			false
 		}
 	}
 
@@ -189,14 +151,7 @@ impl Tetromino {
 	{
 		use RotateDeg::*;
 
-		if matches!(
-			self.kind,
-			TetrominoKind::O | TetrominoKind::None | TetrominoKind::Ghost
-		) {
-			return false;
-		}
-
-		let init_points = self.kind.get_init_points(self.rotate_deg.idx());
+		let init_points = get_init_points(&self.kind, self.rotate_deg.idx());
 
 		let mut diff: [Point; 4] = [(0, 0); 4];
 
@@ -225,21 +180,20 @@ impl Tetromino {
 			_ => unreachable!(),
 		};
 
-		let next_points = self.kind.get_init_points(next_deg.idx());
-
-		self.points.value = next_points;
+		let mut next_points =
+			Points::new(get_init_points(&self.kind, next_deg.idx()));
 
 		for (i, v) in diff.into_iter().enumerate() {
-			self.points.value[i].0 += v.0;
-			self.points.value[i].1 += v.1;
+			next_points.value[i].0 += v.0;
+			next_points.value[i].1 += v.1;
 		}
 
 		#[cfg(feature = "_dev")]
-		log::trace!("after rotate: {:?}", self.points.value);
+		log::trace!("next_points: {:?}", next_points.value);
 
-		let mut ret = false;
+		let mut ok = false;
 
-		if self.points.is_out_of_border() || is_collision(&self.points) {
+		if next_points.is_out_of_border() || is_collision(&next_points) {
 			let kick_offest = match (&self.rotate_deg, next_deg) {
 				(Zero, R) => {
 					if self.kind == TetrominoKind::I {
@@ -301,7 +255,7 @@ impl Tetromino {
 			};
 
 			for offest in kick_offest {
-				let mut points = self.points.clone();
+				let mut points = next_points.clone();
 
 				points.update(|p| {
 					p.0 += offest.0;
@@ -314,15 +268,29 @@ impl Tetromino {
 
 				self.points = points;
 				self.rotate_deg = next_deg;
-				ret = true;
+				ok = true;
 				break;
 			}
 		} else {
+			self.points = next_points;
 			self.rotate_deg = next_deg;
-			ret = true;
+			ok = true;
 		}
 
-		ret
+		ok
+	}
+}
+
+fn get_init_points(kind: &TetrominoKind, idx: usize) -> [Point; 4] {
+	match kind {
+		TetrominoKind::I => rotate_map::I[idx],
+		TetrominoKind::J => rotate_map::J[idx],
+		TetrominoKind::L => rotate_map::L[idx],
+		TetrominoKind::S => rotate_map::S[idx],
+		TetrominoKind::T => rotate_map::T[idx],
+		TetrominoKind::Z => rotate_map::Z[idx],
+		TetrominoKind::O => [(1, 0), (2, 0), (1, 1), (2, 1)],
+		_ => [(0, 0); 4],
 	}
 }
 

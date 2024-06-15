@@ -11,11 +11,12 @@ pub enum Event {
 	FocusLost,
 	AutoDropStart,
 	Pause,
-	CancelPause,
+	PauseCancel,
 	AutoDrop,
 	LevelUp(u8),
-	LockReset,
+	LockRefresh,
 	LockEnd,
+	LockReset,
 }
 
 pub enum KeyEvent {

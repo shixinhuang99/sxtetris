@@ -21,10 +21,6 @@ impl Points {
 		self.value.iter_mut().for_each(f);
 	}
 
-	pub fn is_touched_top(&self) -> bool {
-		self.value.iter().any(|p| p.1 <= 0)
-	}
-
 	pub fn is_touched_bottom(&self) -> bool {
 		self.value.iter().any(|p| p.1 >= MAX_Y)
 	}
@@ -41,6 +37,17 @@ impl Points {
 		self.value
 			.iter()
 			.any(|p| p.0 < 0 || p.0 > MAX_X || p.1 < 0 || p.1 > MAX_Y)
+	}
+
+	pub fn usize_points(&self) -> [(usize, usize); 4] {
+		let mut points = [(0, 0); 4];
+
+		for (i, p) in self.value.iter().enumerate() {
+			points[i].0 = p.0 as usize;
+			points[i].1 = p.1 as usize;
+		}
+
+		points
 	}
 }
 
