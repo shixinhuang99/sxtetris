@@ -43,7 +43,11 @@ impl BoardState {
 		}
 	}
 
-	pub fn is_collision(&self, points: &Points, ignore: &Points) -> bool {
+	pub fn is_collision_with_ignore(
+		&self,
+		points: &Points,
+		ignore: &Points,
+	) -> bool {
 		let ignore_points = ignore.usize_points();
 
 		points.usize_points().iter().any(|p| {
@@ -53,6 +57,15 @@ impl BoardState {
 			{
 				return false;
 			}
+			!matches!(
+				self.board[p.1][p.0],
+				TetrominoKind::None | TetrominoKind::Ghost
+			)
+		})
+	}
+
+	pub fn is_collision(&self, points: &Points) -> bool {
+		points.usize_points().iter().any(|p| {
 			!matches!(
 				self.board[p.1][p.0],
 				TetrominoKind::None | TetrominoKind::Ghost

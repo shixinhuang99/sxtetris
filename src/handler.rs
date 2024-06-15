@@ -30,16 +30,15 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 	let mut event_stream = EventStream::new();
 
 	let mut paused = false;
+	let mut paused_instant = Instant::now();
 
-	let mut auto_drop_interval = interval(auto_drop_duration(1));
-	let mut auto_drop_instant = Instant::now();
+	let mut gravity_interval = interval(gravity_duration(1));
+	let mut gravity_instant = Instant::now();
 
 	let mut lock_interval = interval(lock_duration());
 	let mut lock_limit = 15;
 	let mut lock = false;
 	let mut lock_instant = Instant::now();
-
-	let mut paused_instant = Instant::now();
 
 	loop {
 		tokio::select! {
@@ -80,10 +79,10 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 						paused = true;
 					}
 					Event::PauseCancel => {
-						let past_time = paused_instant - auto_drop_instant;
-						let period = auto_drop_interval.period();
+						let past_time = paused_instant - gravity_instant;
+						let period = gravity_interval.period();
 						if past_time < period {
-							auto_drop_interval
+							gravity_interval
 								.reset_at(Instant::now() + (period - past_time));
 						}
 						let past_time = paused_instant - lock_instant;
@@ -94,13 +93,12 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 						}
 						paused = false;
 					}
-					Event::AutoDropStart => {
-						auto_drop_interval.reset();
-						auto_drop_instant = Instant::now();
-						paused = false;
+					Event::GravityReset => {
+						gravity_interval.reset();
+						gravity_instant = Instant::now();
 					}
 					Event::LevelUp(level) => {
-						auto_drop_interval = interval(auto_drop_duration(level));
+						gravity_interval = interval(gravity_duration(level));
 					}
 					Event::LockReset => {
 						lock = false;
@@ -119,12 +117,12 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 					_ => (),
 				}
 			}
-			_ = auto_drop_interval.tick() => {
+			_ = gravity_interval.tick() => {
 				if paused || lock {
 					continue;
 				}
-				auto_drop_instant = Instant::now();
-				if tx.send(Event::AutoDrop).is_err() {
+				gravity_instant = Instant::now();
+				if tx.send(Event::Gravity).is_err() {
 					break;
 				}
 			}
@@ -144,7 +142,7 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 	}
 }
 
-fn auto_drop_duration(level: u8) -> Duration {
+fn gravity_duration(level: u8) -> Duration {
 	let base = (level - 1) as f32;
 	Duration::from_secs_f32((0.8 - base * 0.007).powf(base))
 }

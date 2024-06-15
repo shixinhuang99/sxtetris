@@ -9,14 +9,14 @@ pub type Sender = UnboundedSender<Event>;
 pub enum Event {
 	Key(KeyEvent),
 	FocusLost,
-	AutoDropStart,
+	GravityReset,
+	Gravity,
 	Pause,
 	PauseCancel,
-	AutoDrop,
-	LevelUp(u8),
 	LockRefresh,
 	LockEnd,
 	LockReset,
+	LevelUp(u8),
 }
 
 pub enum KeyEvent {

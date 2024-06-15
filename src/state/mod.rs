@@ -8,7 +8,8 @@ mod tetromino;
 use bag::Bag;
 pub use board::BoardState;
 use consts::{
-	pause_menu_idx, start_menu_idx, PAUSE_MENU_ITEMS, START_MENU_ITEMS,
+	game_over_menu_idx, pause_menu_idx, start_menu_idx, GAME_OVER_MENU_ITEMS,
+	PAUSE_MENU_ITEMS, START_MENU_ITEMS,
 };
 pub use list::ListState;
 pub use tetromino::TetrominoKind;
@@ -45,6 +46,8 @@ pub struct State {
 	tm_lock_started: bool,
 	pub start_menu: ListState,
 	pub pause_menu: ListState,
+	pub game_over: bool,
+	pub game_over_menu: ListState,
 }
 
 impl State {
@@ -68,20 +71,43 @@ impl State {
 			score: u32::MAX,
 			lines: u32::MAX,
 			currently_screen: CurrentlyScreen::StartMenu,
-			scores: vec![u32::MAX; 10],
+			scores: vec![0; 10],
 			show_scores: false,
 			tm_lock_started: false,
 			start_menu: ListState::new(&START_MENU_ITEMS),
 			pause_menu: ListState::new(&PAUSE_MENU_ITEMS),
+			game_over: false,
+			game_over_menu: ListState::new(&GAME_OVER_MENU_ITEMS),
 		}
 	}
 
 	pub fn new_game(&mut self) {
 		*self = Self::new(self.tx.clone());
 		self.gen_next_tm();
-		self.paused = false;
-		self.send(Event::AutoDropStart);
+		self.cancel_pause();
+		self.send(Event::GravityReset);
 		self.currently_screen = CurrentlyScreen::Game;
+	}
+
+	fn gen_next_tm(&mut self) {
+		self.tm_lock_started = false;
+		self.send(Event::LockReset);
+		self.send(Event::GravityReset);
+		self.active_tm = Tetromino::new(self.preview_tm.kind);
+		let is_game_over = self.board.is_collision(&self.active_tm.points);
+		self.move_ghost_tm();
+		self.board.update_area(&self.active_tm);
+		self.preview_board.clear_area(&self.preview_tm);
+		self.preview_tm = Tetromino::new_preview(self.bag.next());
+		self.preview_board.update_area(&self.preview_tm);
+
+		if is_game_over {
+			self.scores.push(self.score);
+			self.scores.sort_unstable_by(|a, b| b.cmp(a));
+			self.scores.truncate(10);
+			self.game_over = true;
+			self.pause();
+		}
 	}
 
 	pub fn handle_event(&mut self, event: Event) {
@@ -100,7 +126,10 @@ impl State {
 	fn update_game(&mut self, event: Event) {
 		match event {
 			Event::Key(key) => {
-				if self.paused {
+				if self.game_over {
+					self.update_game_over_menu(key);
+					return;
+				} else if self.paused {
 					self.update_pause_menu(key);
 					return;
 				}
@@ -129,7 +158,7 @@ impl State {
 					_ => (),
 				}
 			}
-			Event::AutoDrop => {
+			Event::Gravity => {
 				self.move_tm(TetrominoAction::SoftDrop);
 			}
 			Event::FocusLost => {
@@ -225,7 +254,9 @@ impl State {
 		} else {
 			let mut virtual_tm = self.active_tm.clone();
 
-			if !virtual_tm.walk(&tm_action) || self.is_collision(&virtual_tm) {
+			if !virtual_tm.walk(&tm_action)
+				|| self.is_collision_ignore_self(&virtual_tm)
+			{
 				None
 			} else {
 				Some(virtual_tm)
@@ -250,9 +281,9 @@ impl State {
 				self.gen_next_tm();
 				return;
 			}
-
-			self.update_tm_lock();
 		}
+
+		self.update_tm_lock();
 	}
 
 	fn update_tm_lock(&mut self) {
@@ -262,17 +293,6 @@ impl State {
 			self.tm_lock_started = true;
 			self.send(Event::LockRefresh);
 		}
-	}
-
-	fn gen_next_tm(&mut self) {
-		self.tm_lock_started = false;
-		self.send(Event::LockReset);
-		self.active_tm = Tetromino::new(self.preview_tm.kind);
-		self.move_ghost_tm();
-		self.board.update_area(&self.active_tm);
-		self.preview_board.clear_area(&self.preview_tm);
-		self.preview_tm = Tetromino::new_preview(self.bag.next());
-		self.preview_board.update_area(&self.preview_tm);
 	}
 
 	fn move_ghost_tm(&mut self) {
@@ -286,7 +306,7 @@ impl State {
 			let mut points = virtual_tm.points.clone();
 			while distance > 0 {
 				if !virtual_tm.walk(&TetrominoAction::SoftDrop)
-					|| self.is_collision(&virtual_tm)
+					|| self.is_collision_ignore_self(&virtual_tm)
 				{
 					break;
 				}
@@ -303,8 +323,9 @@ impl State {
 		}
 	}
 
-	fn is_collision(&self, tm: &Tetromino) -> bool {
-		self.board.is_collision(&tm.points, &self.active_tm.points)
+	fn is_collision_ignore_self(&self, tm: &Tetromino) -> bool {
+		self.board
+			.is_collision_with_ignore(&tm.points, &self.active_tm.points)
 	}
 
 	fn send(&self, event: Event) {
@@ -329,13 +350,40 @@ impl State {
 		let mut virtual_tm = self.active_tm.clone();
 
 		if virtual_tm.rotate(&tm_action, |points| {
-			self.board.is_collision(points, &self.active_tm.points)
+			self.board
+				.is_collision_with_ignore(points, &self.active_tm.points)
 		}) {
 			self.board.clear_area(&self.active_tm);
 			self.active_tm = virtual_tm;
 			self.move_ghost_tm();
 			self.board.update_area(&self.active_tm);
-			self.update_tm_lock();
+		}
+
+		self.update_tm_lock();
+	}
+
+	fn update_game_over_menu(&mut self, key: KeyEvent) {
+		use game_over_menu_idx::*;
+
+		match key {
+			KeyEvent::Up => {
+				self.game_over_menu.up();
+			}
+			KeyEvent::Down => {
+				self.game_over_menu.down();
+			}
+			KeyEvent::Enter | KeyEvent::Space => {
+				match self.game_over_menu.cursor {
+					NEW_GAME => {
+						self.new_game();
+					}
+					QUIT => {
+						self.running = false;
+					}
+					_ => (),
+				}
+			}
+			_ => (),
 		}
 	}
 }
