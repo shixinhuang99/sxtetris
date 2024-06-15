@@ -48,6 +48,7 @@ async fn handle_term_input(tx: Sender) {
 					KeyCode::Char(' ') => KeyEvent::Space,
 					KeyCode::Esc => KeyEvent::Esc,
 					KeyCode::Char('p') => KeyEvent::P,
+					KeyCode::Char('z') => KeyEvent::Z,
 					_ => continue,
 				};
 				Event::Key(key_event)

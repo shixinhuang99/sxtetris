@@ -89,8 +89,5 @@ fn create_text(tm_kind: &TetrominoKind) -> Text<'static> {
 			symbols::half_block::UPPER
 		};
 
-	#[cfg(feature = "_dev")]
-	let content = char::from(*tm_kind);
-
 	Text::raw(content.to_string())
 }

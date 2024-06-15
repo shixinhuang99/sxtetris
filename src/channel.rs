@@ -28,6 +28,7 @@ pub enum KeyEvent {
 	Enter,
 	Esc,
 	P,
+	Z,
 }
 
 pub fn channel() -> (Sender, Receiver) {

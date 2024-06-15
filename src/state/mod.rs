@@ -2,7 +2,7 @@ mod bag;
 mod board;
 mod consts;
 mod list;
-mod position;
+mod point;
 mod tetromino;
 
 use bag::Bag;
@@ -51,14 +51,14 @@ impl State {
 	pub fn new(tx: Sender) -> Self {
 		let mut bag = Bag::new();
 
-		let state = Self {
+		Self {
 			tx,
 			board: BoardState::new(BOARD_Y_LEN, BOARD_X_LEN),
 			preview_board: BoardState::new(
 				PREVIEW_BOARD_Y_LEN,
 				PREVIEW_BOARD_X_LEN,
 			),
-			active_tm: Tetromino::default(),
+			active_tm: Tetromino::new(TetrominoKind::None),
 			ghost_tm: Tetromino::new(TetrominoKind::Ghost),
 			preview_tm: Tetromino::new_preview(bag.next()),
 			bag,
@@ -73,9 +73,7 @@ impl State {
 			lock_start: false,
 			start_menu: ListState::new(&START_MENU_ITEMS),
 			pause_menu: ListState::new(&PAUSE_MENU_ITEMS),
-		};
-
-		state
+		}
 	}
 
 	pub fn new_game(&mut self) {
@@ -118,6 +116,12 @@ impl State {
 					}
 					KeyEvent::Space => {
 						self.move_active_tm(TetrominoAction::HardDrop);
+					}
+					KeyEvent::Up => {
+						self.rotate_tm(TetrominoAction::RotateRight);
+					}
+					KeyEvent::Z => {
+						self.rotate_tm(TetrominoAction::RotateLeft);
 					}
 					KeyEvent::Esc | KeyEvent::P => {
 						self.pause();
@@ -214,17 +218,23 @@ impl State {
 	}
 
 	fn move_active_tm(&mut self, tm_action: TetrominoAction) {
-		if self.active_tm.kind == TetrominoKind::None {
-			return;
-		}
-
 		let Some(next_tetromino) = self.calc_next_position(&tm_action) else {
 			return;
 		};
 
 		self.update_active_tm(next_tetromino);
 
-		if matches!(tm_action, TetrominoAction::Left | TetrominoAction::Right) {
+		self.move_ghost_and_check_lock(tm_action);
+	}
+
+	fn move_ghost_and_check_lock(&mut self, tm_action: TetrominoAction) {
+		if matches!(
+			tm_action,
+			TetrominoAction::Left
+				| TetrominoAction::Right
+				| TetrominoAction::RotateRight
+				| TetrominoAction::RotateLeft
+		) {
 			if self.lock_start {
 				self.send(Event::LockReset);
 			} else {
@@ -243,20 +253,20 @@ impl State {
 	}
 
 	fn update_active_tm(&mut self, tm: Tetromino) {
-		self.board.clear_area(&self.active_tm.position);
-		self.board.update_area(&tm.position, tm.kind);
+		self.board.clear_area(&self.active_tm.points);
+		self.board.update_area(&tm.points, tm.kind);
 		self.active_tm = tm;
 	}
 
 	fn gen_next_active_tm(&mut self) {
-		self.preview_board.clear_area(&self.preview_tm.position);
+		self.preview_board.clear_area(&self.preview_tm.points);
 
 		let active_tm = Tetromino::new(self.preview_tm.kind);
 		let preview_tm = Tetromino::new_preview(self.bag.next());
 
-		self.board.update_area(&active_tm.position, active_tm.kind);
+		self.board.update_area(&active_tm.points, active_tm.kind);
 		self.preview_board
-			.update_area(&preview_tm.position, preview_tm.kind);
+			.update_area(&preview_tm.points, preview_tm.kind);
 
 		self.active_tm = active_tm;
 		self.preview_tm = preview_tm;
@@ -265,10 +275,10 @@ impl State {
 	}
 
 	fn update_ghost_tm(&mut self, tm: Tetromino) {
-		self.board.clear_area_if(&self.ghost_tm.position, |kind| {
+		self.board.clear_area_if(&self.ghost_tm.points, |kind| {
 			matches!(kind, TetrominoKind::None | TetrominoKind::Ghost)
 		});
-		self.board.update_area(&tm.position, TetrominoKind::Ghost);
+		self.board.update_area(&tm.points, TetrominoKind::Ghost);
 		self.ghost_tm = tm;
 	}
 
@@ -314,21 +324,7 @@ impl State {
 	}
 
 	fn is_collision(&self, tm: &Tetromino) -> bool {
-		tm.position.points.iter().any(|p| {
-			if self
-				.active_tm
-				.position
-				.points
-				.iter()
-				.any(|other| p.0 == other.0 && p.1 == other.1)
-			{
-				return false;
-			}
-			!matches!(
-				self.board.get_cell(p.0, p.1),
-				TetrominoKind::None | TetrominoKind::Ghost
-			)
-		})
+		self.board.is_collision(&tm.points, &self.active_tm.points)
 	}
 
 	fn send(&self, event: Event) {
@@ -343,5 +339,20 @@ impl State {
 	fn cancel_pause(&mut self) {
 		self.paused = false;
 		self.send(Event::CancelPause);
+	}
+
+	fn rotate_tm(&mut self, tm_action: TetrominoAction) {
+		let mut virtual_tm = self.active_tm.clone();
+
+		let ok = virtual_tm.rotate(&tm_action, |points| {
+			self.board.is_collision(points, &self.active_tm.points)
+		});
+
+		if ok {
+			self.board.clear_area(&self.active_tm.points);
+			self.board.update_area(&virtual_tm.points, virtual_tm.kind);
+			self.active_tm = virtual_tm;
+			self.move_ghost_and_check_lock(tm_action);
+		}
 	}
 }
