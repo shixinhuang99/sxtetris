@@ -3,10 +3,14 @@ use std::{fs, path::PathBuf};
 use anyhow::Result;
 use directories::ProjectDirs;
 
-use crate::{consts::APP_NAME, state::State};
+use crate::{
+	consts::APP_NAME,
+	state::{CurrentlyScreen, State},
+};
 
 pub struct Save {
-	pub path: PathBuf,
+	dir: PathBuf,
+	file: PathBuf,
 	pub scores: Vec<u32>,
 	pub last_game: Option<LastGame>,
 }
@@ -26,17 +30,20 @@ impl Save {
 	const FILE_NAME: &'static str = "save.txt";
 
 	pub fn new() -> Self {
-		let path = if cfg!(feature = "_dev") {
-			PathBuf::from(Save::FILE_NAME)
+		let dir = if cfg!(feature = "_dev") {
+			PathBuf::from("./")
 		} else {
 			ProjectDirs::from("", "", APP_NAME)
 				.unwrap()
 				.config_dir()
-				.join(Save::FILE_NAME)
+				.to_path_buf()
 		};
 
+		let file = dir.join(Self::FILE_NAME);
+
 		Self {
-			path,
+			dir,
+			file,
 			scores: vec![0; 10],
 			last_game: None,
 		}
@@ -51,6 +58,12 @@ impl Save {
 			content.push_str(&format!("{}\n", score));
 		}
 
+		if state.currently_screen == CurrentlyScreen::StartMenu
+			&& self.last_game.is_none()
+		{
+			return Ok(());
+		}
+
 		if !state.is_game_over {
 			content.push_str(&state.board.stringify());
 			content.push_str(&state.bag.stringify());
@@ -62,7 +75,7 @@ impl Save {
 			));
 		}
 
-		fs::write(&self.path, content)?;
+		fs::write(&self.file, content)?;
 
 		Ok(())
 	}
@@ -70,7 +83,12 @@ impl Save {
 	pub fn read(&mut self) -> Result<()> {
 		use section_map::*;
 
-		let content = fs::read_to_string(&self.path)?;
+		if !self.file.exists() {
+			fs::create_dir_all(&self.dir)?;
+			fs::write(&self.file, "")?;
+		}
+
+		let content = fs::read_to_string(&self.file)?;
 		let content_lines: Vec<&str> = content.lines().collect();
 
 		if content_lines.is_empty()

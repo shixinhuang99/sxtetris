@@ -27,7 +27,7 @@ impl App {
 		let handler = Handler::new(state_rx);
 		let mut state = State::new(state_tx);
 
-		state.read_save(&mut save);
+		state.read_save(&save);
 
 		Ok(Self {
 			term,

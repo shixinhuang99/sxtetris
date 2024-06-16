@@ -1,4 +1,10 @@
-use ratatui::{layout::Constraint, text::Line, widgets::Clear, Frame};
+use ratatui::{
+	layout::Constraint,
+	style::{Color, Style},
+	text::Line,
+	widgets::Clear,
+	Frame,
+};
 use tui_big_text::{BigText, PixelSize};
 
 use super::utils::{centered_rect, rounded_block};
@@ -35,6 +41,7 @@ pub fn scores(f: &mut Frame, state: &State) {
 	let text = BigText::builder()
 		.pixel_size(PixelSize::Quadrant)
 		.lines(lines)
+		.style(Style::new().fg(Color::White))
 		.build()
 		.unwrap();
 

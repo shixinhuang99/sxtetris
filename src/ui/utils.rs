@@ -1,5 +1,6 @@
 use ratatui::{
 	layout::{Alignment, Constraint, Flex, Layout, Rect},
+	style::{Color, Style},
 	widgets::{block::Title, Block, BorderType, Borders},
 };
 
@@ -17,7 +18,9 @@ pub fn centered_rect(
 pub fn rounded_block(title: Option<&str>) -> Block {
 	let mut b = Block::new()
 		.borders(Borders::ALL)
-		.border_type(BorderType::Rounded);
+		.border_type(BorderType::Rounded)
+		.style(Style::new().bg(Color::Black))
+		.border_style(Style::new().fg(Color::White));
 
 	if let Some(title) = title {
 		b = b.title(Title::from(title).alignment(Alignment::Center));

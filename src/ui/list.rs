@@ -19,10 +19,11 @@ pub fn list(f: &mut Frame, rect: Rect, list_state: &ListState) {
 
 		title_builder
 			.pixel_size(PixelSize::Quadrant)
-			.lines([Line::raw(*item)]);
+			.lines([Line::raw(*item)])
+			.style(Style::new().fg(Color::White));
 
 		if i == list_state.cursor {
-			title_builder.style(Style::new().fg(Color::Yellow));
+			title_builder.style(Style::new().fg(Color::LightYellow));
 		}
 
 		let title = title_builder.build().unwrap();
