@@ -42,7 +42,6 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 
 	loop {
 		tokio::select! {
-			biased;
 			Some(Ok(term_event)) = event_stream.next() => {
 				let event = match term_event {
 					TermEvent::Key(key) if key.kind == KeyEventKind::Press => {
@@ -97,8 +96,10 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 						gravity_interval.reset();
 						gravity_instant = Instant::now();
 					}
-					Event::LevelUp(level) => {
-						gravity_interval = interval(gravity_duration(level));
+					Event::LevelChange(level) => {
+						if level <= 15 {
+							gravity_interval = interval(gravity_duration(level));
+						}
 					}
 					Event::LockReset => {
 						lock = false;
@@ -142,9 +143,14 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 	}
 }
 
-fn gravity_duration(level: u8) -> Duration {
+fn gravity_duration(level: u32) -> Duration {
 	let base = (level - 1) as f32;
-	Duration::from_secs_f32((0.8 - base * 0.007).powf(base))
+	let duration_secs = (0.8 - base * 0.007).powf(base);
+
+	#[cfg(feature = "_dev")]
+	log::trace!("gravity duration secs: {}", duration_secs);
+
+	Duration::from_secs_f32(duration_secs)
 }
 
 fn lock_duration() -> Duration {

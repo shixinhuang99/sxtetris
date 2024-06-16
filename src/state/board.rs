@@ -1,15 +1,29 @@
+use std::collections::VecDeque;
+
 use super::{point::Points, Tetromino, TetrominoKind};
 
 pub struct BoardState {
-	pub board: Vec<Vec<TetrominoKind>>,
+	pub board: VecDeque<Vec<TetrominoKind>>,
 	pub rows: usize,
 	pub cols: usize,
 }
 
 impl BoardState {
 	pub fn new(rows: usize, cols: usize) -> Self {
+		let board = VecDeque::from(vec![vec![TetrominoKind::None; cols]; rows]);
+
+		#[cfg(feature = "_dev")]
+		{
+			log::trace!("rows: {}, cols: {}", rows, cols);
+			log::trace!(
+				"board rows: {}, board cols: {}",
+				board.len(),
+				board[0].len()
+			);
+		}
+
 		Self {
-			board: vec![vec![TetrominoKind::None; cols]; rows],
+			board,
 			rows,
 			cols,
 		}
@@ -72,4 +86,26 @@ impl BoardState {
 			)
 		})
 	}
+
+	pub fn check_and_clear_line(&mut self) -> u32 {
+		let mut cnt = 0;
+
+		self.board.retain(|line| {
+			if line.iter().any(|tm_kind| {
+				matches!(tm_kind, TetrominoKind::None | TetrominoKind::Ghost)
+			}) {
+				return true;
+			}
+			cnt += 1;
+			false
+		});
+
+		for _ in 0..cnt {
+			self.board.push_front(vec![TetrominoKind::None; self.cols]);
+		}
+
+		cnt
+	}
+
+	// pub fn reset(&mut self) {}
 }

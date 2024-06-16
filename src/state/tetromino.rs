@@ -189,7 +189,7 @@ impl Tetromino {
 		}
 
 		#[cfg(feature = "_dev")]
-		log::trace!("next_points: {:?}", next_points.value);
+		log::trace!("next points: {:?}", next_points.value);
 
 		let mut ok = false;
 
@@ -289,7 +289,7 @@ fn get_init_points(kind: &TetrominoKind, idx: usize) -> [Point; 4] {
 		TetrominoKind::S => rotate_map::S[idx],
 		TetrominoKind::T => rotate_map::T[idx],
 		TetrominoKind::Z => rotate_map::Z[idx],
-		TetrominoKind::O => [(1, 0), (2, 0), (1, 1), (2, 1)],
+		TetrominoKind::O => rotate_map::O[idx],
 		_ => [(0, 0); 4],
 	}
 }
@@ -339,6 +339,13 @@ mod rotate_map {
 		[(2, 0), (2, 1), (1, 1), (1, 2)],
 		[(2, 2), (1, 2), (1, 1), (0, 1)],
 		[(0, 2), (0, 1), (1, 1), (1, 0)],
+	];
+
+	pub const O: Map = [
+		[(1, 0), (2, 0), (1, 1), (2, 1)],
+		[(1, 0), (2, 0), (1, 1), (2, 1)],
+		[(1, 0), (2, 0), (1, 1), (2, 1)],
+		[(1, 0), (2, 0), (1, 1), (2, 1)],
 	];
 }
 
