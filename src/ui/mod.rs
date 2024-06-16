@@ -1,4 +1,5 @@
 mod board;
+mod game_over_menu;
 mod list;
 mod pause_menu;
 mod scores;
@@ -7,6 +8,7 @@ mod start_menu;
 mod utils;
 
 use board::board;
+use game_over_menu::game_over_menu;
 use pause_menu::pause_menu;
 use ratatui::{
 	layout::{Constraint, Flex, Layout},
@@ -71,7 +73,9 @@ pub fn ui(f: &mut Frame, state: &State) {
 
 	sidebar(f, right_area, state, cell_height, cell_width);
 
-	if state.paused {
+	if state.game_over {
+		game_over_menu(f, state);
+	} else if state.paused {
 		pause_menu(f, &state.pause_menu);
 	}
 

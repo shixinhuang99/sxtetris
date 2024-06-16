@@ -1,6 +1,7 @@
 use ratatui::{
 	layout::{Constraint, Flex, Layout, Rect},
 	style::{Color, Style},
+	text::Line,
 	Frame,
 };
 use tui_big_text::{BigText, PixelSize};
@@ -18,7 +19,7 @@ pub fn list(f: &mut Frame, rect: Rect, list_state: &ListState) {
 
 		title_builder
 			.pixel_size(PixelSize::Quadrant)
-			.lines([(*item).into()]);
+			.lines([Line::raw(*item)]);
 
 		if i == list_state.cursor {
 			title_builder.style(Style::new().fg(Color::Yellow));

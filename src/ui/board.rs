@@ -1,9 +1,7 @@
 use ratatui::{
 	layout::{Constraint, Layout, Rect},
 	style::{Color, Style},
-	symbols,
-	text::Text,
-	widgets::{Borders, Paragraph},
+	widgets::Borders,
 	Frame,
 };
 
@@ -45,9 +43,7 @@ pub fn board(
 
 			let tm_kind = board_state.get_cell(x, y_with_offest);
 
-			let style = create_style(tm_kind);
-
-			let mut b = rounded_block(None).border_style(style);
+			let mut b = rounded_block(None).border_style(create_style(tm_kind));
 
 			if !is_main_board && *tm_kind == TetrominoKind::None {
 				b = b.borders(Borders::NONE);
@@ -60,9 +56,7 @@ pub fn board(
 					.title_bottom(y_with_offest.to_string());
 			}
 
-			let p = Paragraph::new(create_text(tm_kind)).block(b).style(style);
-
-			f.render_widget(p, *horizontal_area);
+			f.render_widget(b, *horizontal_area);
 		}
 	}
 }
@@ -79,15 +73,4 @@ fn create_style(tm_kind: &TetrominoKind) -> Style {
 		TetrominoKind::None => Style::new().fg(Color::Black),
 		TetrominoKind::Ghost => Style::new().fg(Color::White),
 	}
-}
-
-fn create_text(tm_kind: &TetrominoKind) -> Text<'static> {
-	let content =
-		if matches!(tm_kind, TetrominoKind::None | TetrominoKind::Ghost) {
-			' '
-		} else {
-			symbols::half_block::UPPER
-		};
-
-	Text::raw(content.to_string())
 }

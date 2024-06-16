@@ -7,7 +7,7 @@ pub struct Bag {
 
 impl Bag {
 	pub fn new() -> Self {
-		let mut this = Self {
+		let mut bag = Self {
 			value: [
 				TetrominoKind::I,
 				TetrominoKind::J,
@@ -20,9 +20,9 @@ impl Bag {
 			cursor: 0,
 		};
 
-		this.shuffle();
+		bag.shuffle();
 
-		this
+		bag
 	}
 
 	fn shuffle(&mut self) {

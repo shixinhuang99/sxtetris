@@ -15,3 +15,10 @@ pub mod pause_menu_idx {
 	pub const SCORES: usize = 2;
 	pub const QUIT: usize = 3;
 }
+
+pub const GAME_OVER_MENU_ITEMS: [&str; 2] = ["NEW GAME", "QUIT"];
+
+pub mod game_over_menu_idx {
+	pub const NEW_GAME: usize = 0;
+	pub const QUIT: usize = 1;
+}
