@@ -1,4 +1,5 @@
 mod board;
+mod count_down;
 mod game_over_menu;
 mod list;
 mod pause_menu;
@@ -8,6 +9,7 @@ mod start_menu;
 mod utils;
 
 use board::board;
+use count_down::count_down;
 use game_over_menu::game_over_menu;
 use pause_menu::pause_menu;
 use ratatui::{
@@ -78,6 +80,8 @@ pub fn ui(f: &mut Frame, state: &State) {
 
 	if state.is_game_over {
 		game_over_menu(f, state);
+	} else if state.last_game_count_down > 0 {
+		count_down(f, state);
 	} else if state.paused {
 		pause_menu(f, &state.pause_menu);
 	}

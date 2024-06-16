@@ -50,7 +50,7 @@ pub struct State {
 	pub pause_menu: ListState,
 	pub is_game_over: bool,
 	pub game_over_menu: ListState,
-	last_game: bool,
+	pub last_game_count_down: u8,
 }
 
 impl State {
@@ -82,14 +82,14 @@ impl State {
 			pause_menu: ListState::new(&PAUSE_MENU_ITEMS),
 			is_game_over: false,
 			game_over_menu: ListState::new(&GAME_OVER_MENU_ITEMS),
-			last_game: false,
+			last_game_count_down: 0,
 		}
 	}
 
 	pub fn read_save(&mut self, save: &mut Save) {
 		self.scores.clone_from(&save.scores);
 		if let Some(last_game) = save.last_game.take() {
-			self.last_game = true;
+			self.last_game_count_down = 4;
 			self.board.read_save(last_game.board);
 			self.bag.read_save(last_game.bag);
 			self.active_tm.read_save(last_game.active_tm);
@@ -102,11 +102,11 @@ impl State {
 	}
 
 	fn play(&mut self) {
-		if self.last_game {
+		if self.last_game_count_down > 0 {
 			self.send(Event::GravityReset);
 			self.reset_lock();
-			self.cancel_pause();
 			self.move_ghost_tm();
+			self.send(Event::CountDownStart);
 			self.currently_screen = CurrentlyScreen::Game;
 		} else {
 			self.new_game();
@@ -212,6 +212,12 @@ impl State {
 			}
 			Event::LockEnd => {
 				self.gen_next_tm();
+			}
+			Event::CountDown(v) => {
+				self.last_game_count_down = v;
+				if self.last_game_count_down == 0 {
+					self.cancel_pause();
+				}
 			}
 			_ => (),
 		};

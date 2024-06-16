@@ -17,6 +17,8 @@ pub enum Event {
 	LockEnd,
 	LockReset,
 	LevelChange(u32),
+	CountDownStart,
+	CountDown(u8),
 }
 
 pub enum KeyEvent {

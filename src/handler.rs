@@ -29,7 +29,7 @@ impl Handler {
 async fn task(tx: Sender, mut state_rx: Receiver) {
 	let mut event_stream = EventStream::new();
 
-	let mut paused = false;
+	let mut paused = true;
 	let mut paused_instant = Instant::now();
 
 	let mut gravity_interval = interval(gravity_duration(1));
@@ -41,6 +41,9 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 	let mut lock_instant = Instant::now();
 
 	loop {
+		#[cfg(feature = "_dev")]
+		log::trace!("tx count: {}", tx.strong_count());
+
 		tokio::select! {
 			Some(Ok(term_event)) = event_stream.next() => {
 				let event = match term_event {
@@ -115,6 +118,9 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 							lock_instant = Instant::now();
 						}
 					}
+					Event::CountDownStart => {
+						tokio::spawn(count_down_task(tx.clone()));
+					}
 					_ => (),
 				}
 			}
@@ -140,6 +146,17 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 				}
 			}
 		}
+	}
+}
+
+async fn count_down_task(tx: Sender) {
+	let mut cnt = 4;
+	let mut count_down_interval = interval(Duration::from_secs(1));
+
+	while cnt > 0 {
+		count_down_interval.tick().await;
+		cnt -= 1;
+		tx.send(Event::CountDown(cnt)).unwrap();
 	}
 }
 
