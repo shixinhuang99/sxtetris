@@ -56,6 +56,12 @@ impl Points {
 
 		points
 	}
+
+	pub fn contains(&self, x: usize, y: usize) -> bool {
+		self.value
+			.iter()
+			.any(|p| p.1 as usize == y && p.0 as usize == x)
+	}
 }
 
 impl PartialEq for Points {

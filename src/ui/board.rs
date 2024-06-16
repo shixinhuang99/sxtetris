@@ -6,7 +6,7 @@ use ratatui::{
 };
 
 use super::utils::rounded_block;
-use crate::state::{BoardState, TetrominoKind};
+use crate::state::{BoardState, Tetromino, TetrominoKind};
 
 pub fn board(
 	f: &mut Frame,
@@ -15,6 +15,7 @@ pub fn board(
 	cell_height: u16,
 	cell_width: u16,
 	is_main_board: bool,
+	active_tm: &Tetromino,
 ) {
 	let rows = if is_main_board {
 		board_state.rows / 2
@@ -44,6 +45,11 @@ pub fn board(
 			let tm_kind = board_state.get_cell(x, y_with_offest);
 
 			let mut b = rounded_block(None).border_style(create_style(tm_kind));
+
+			if active_tm.points.contains(x, y_with_offest) && active_tm.is_blink
+			{
+				b = b.border_style(Style::new().fg(Color::Gray));
+			}
 
 			if !is_main_board && *tm_kind == TetrominoKind::None {
 				b = b.borders(Borders::NONE);

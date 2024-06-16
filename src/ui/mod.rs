@@ -74,7 +74,15 @@ pub fn ui(f: &mut Frame, state: &State) {
 			.flex(Flex::Start)
 			.areas::<1>(horizontal_area[1])[0];
 
-	board(f, left_area, &state.board, cell_height, cell_width, true);
+	board(
+		f,
+		left_area,
+		&state.board,
+		cell_height,
+		cell_width,
+		true,
+		&state.active_tm,
+	);
 
 	sidebar(f, right_area, state, cell_height, cell_width);
 

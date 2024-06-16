@@ -12,8 +12,8 @@ use consts::{
 	PAUSE_MENU_ITEMS, START_MENU_ITEMS,
 };
 pub use list::ListState;
-pub use tetromino::TetrominoKind;
-use tetromino::{Tetromino, TetrominoAction};
+use tetromino::TetrominoAction;
+pub use tetromino::{Tetromino, TetrominoKind};
 
 use crate::{
 	channel::{Event, KeyEvent, Sender},
@@ -218,6 +218,9 @@ impl State {
 				if self.last_game_count_down == 0 {
 					self.cancel_pause();
 				}
+			}
+			Event::Blink => {
+				self.active_tm.is_blink = !self.active_tm.is_blink;
 			}
 			_ => (),
 		};

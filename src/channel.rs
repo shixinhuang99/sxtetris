@@ -19,6 +19,7 @@ pub enum Event {
 	LevelChange(u32),
 	CountDownStart,
 	CountDown(u8),
+	Blink,
 }
 
 pub enum KeyEvent {

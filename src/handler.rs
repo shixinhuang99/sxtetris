@@ -2,7 +2,7 @@ use crossterm::event::{
 	Event as TermEvent, EventStream, KeyCode, KeyEventKind, KeyModifiers,
 };
 use futures::StreamExt;
-use tokio::time::{interval, Duration, Instant};
+use tokio::time::{interval, Duration, Instant, Interval};
 
 use crate::channel::{channel, Event, KeyEvent, Receiver, Sender};
 
@@ -35,10 +35,13 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 	let mut gravity_interval = interval(gravity_duration(1));
 	let mut gravity_instant = Instant::now();
 
-	let mut lock_interval = interval(lock_duration());
+	let mut lock_interval = interval(Duration::from_millis(500));
 	let mut lock_limit = 15;
 	let mut lock = false;
 	let mut lock_instant = Instant::now();
+
+	let mut blink_interval = interval(Duration::from_millis(150));
+	let mut blink_instant = Instant::now();
 
 	loop {
 		#[cfg(feature = "_dev")]
@@ -81,18 +84,21 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 						paused = true;
 					}
 					Event::PauseCancel => {
-						let past_time = paused_instant - gravity_instant;
-						let period = gravity_interval.period();
-						if past_time < period {
-							gravity_interval
-								.reset_at(Instant::now() + (period - past_time));
-						}
-						let past_time = paused_instant - lock_instant;
-						let period = lock_interval.period();
-						if past_time < period {
-							lock_interval
-								.reset_at(Instant::now() + (period - past_time));
-						}
+						make_time_continue(
+							&paused_instant,
+							&gravity_instant,
+							&mut gravity_interval,
+						);
+						make_time_continue(
+							&paused_instant,
+							&lock_instant,
+							&mut lock_interval,
+						);
+						make_time_continue(
+							&paused_instant,
+							&blink_instant,
+							&mut blink_interval,
+						);
 						paused = false;
 					}
 					Event::GravityReset => {
@@ -134,7 +140,7 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 				}
 			}
 			_ = lock_interval.tick() => {
-				if paused || !lock {
+				if !lock || paused {
 					continue;
 				}
 				lock = false;
@@ -142,6 +148,15 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 				lock_interval.reset();
 				lock_instant = Instant::now();
 				if tx.send(Event::LockEnd).is_err() {
+					break;
+				}
+			}
+			_ = blink_interval.tick() => {
+				if !lock || paused {
+					continue;
+				}
+				blink_instant = Instant::now();
+				if tx.send(Event::Blink).is_err() {
 					break;
 				}
 			}
@@ -170,6 +185,14 @@ fn gravity_duration(level: u32) -> Duration {
 	Duration::from_secs_f32(duration_secs)
 }
 
-fn lock_duration() -> Duration {
-	Duration::from_millis(500)
+fn make_time_continue(
+	paused_instant: &Instant,
+	instant: &Instant,
+	interval: &mut Interval,
+) {
+	let past_time = *paused_instant - *instant;
+	let period = interval.period();
+	if past_time < period {
+		interval.reset_at(Instant::now() + (period - past_time));
+	}
 }
