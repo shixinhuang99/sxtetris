@@ -30,6 +30,21 @@ pub enum TetrominoKind {
 	Ghost,
 }
 
+impl TetrominoKind {
+	fn init_points(&self, idx: usize) -> [Point; 4] {
+		match self {
+			TetrominoKind::I => rotate_map::I[idx],
+			TetrominoKind::J => rotate_map::J[idx],
+			TetrominoKind::L => rotate_map::L[idx],
+			TetrominoKind::O => rotate_map::O[idx],
+			TetrominoKind::S => rotate_map::S[idx],
+			TetrominoKind::T => rotate_map::T[idx],
+			TetrominoKind::Z => rotate_map::Z[idx],
+			_ => [(0, 0); 4],
+		}
+	}
+}
+
 impl From<char> for TetrominoKind {
 	fn from(value: char) -> Self {
 		match value {
@@ -55,8 +70,7 @@ impl From<TetrominoKind> for char {
 			TetrominoKind::S => 'S',
 			TetrominoKind::T => 'T',
 			TetrominoKind::Z => 'Z',
-			TetrominoKind::Ghost => 'G',
-			TetrominoKind::None => '-',
+			TetrominoKind::None | TetrominoKind::Ghost => '-',
 		}
 	}
 }
@@ -79,9 +93,21 @@ enum RotateDeg {
 	Two,
 }
 
-impl RotateDeg {
-	fn idx(&self) -> usize {
-		match self {
+impl From<usize> for RotateDeg {
+	fn from(value: usize) -> Self {
+		match value {
+			0 => RotateDeg::Zero,
+			1 => RotateDeg::R,
+			3 => RotateDeg::L,
+			2 => RotateDeg::Two,
+			_ => unreachable!(),
+		}
+	}
+}
+
+impl From<RotateDeg> for usize {
+	fn from(value: RotateDeg) -> Self {
+		match value {
 			RotateDeg::Zero => 0,
 			RotateDeg::R => 1,
 			RotateDeg::L => 3,
@@ -95,6 +121,7 @@ pub struct Tetromino {
 	pub kind: TetrominoKind,
 	pub points: Points,
 	rotate_deg: RotateDeg,
+	pub is_blink: bool,
 }
 
 impl Tetromino {
@@ -107,7 +134,7 @@ impl Tetromino {
 	}
 
 	pub fn new_preview(kind: TetrominoKind) -> Self {
-		let mut points = Points::new(get_init_points(&kind, 0));
+		let mut points = Points::new(kind.init_points(0));
 
 		points.update(|p| p.0 += 3);
 
@@ -115,6 +142,7 @@ impl Tetromino {
 			kind,
 			points,
 			rotate_deg: RotateDeg::Zero,
+			is_blink: false,
 		}
 	}
 
@@ -151,7 +179,7 @@ impl Tetromino {
 	{
 		use RotateDeg::*;
 
-		let init_points = get_init_points(&self.kind, self.rotate_deg.idx());
+		let init_points = self.kind.init_points(self.rotate_deg.into());
 
 		let mut diff: [Point; 4] = [(0, 0); 4];
 
@@ -181,7 +209,7 @@ impl Tetromino {
 		};
 
 		let mut next_points =
-			Points::new(get_init_points(&self.kind, next_deg.idx()));
+			Points::new(self.kind.init_points(next_deg.into()));
 
 		for (i, v) in diff.into_iter().enumerate() {
 			next_points.value[i].0 += v.0;
@@ -189,11 +217,11 @@ impl Tetromino {
 		}
 
 		#[cfg(feature = "_dev")]
-		log::trace!("next_points: {:?}", next_points.value);
+		log::trace!("next points: {:?}", next_points.value);
 
 		let mut ok = false;
 
-		if next_points.is_out_of_border() || is_collision(&next_points) {
+		if next_points.is_out_of_board() || is_collision(&next_points) {
 			let kick_offest = match (&self.rotate_deg, next_deg) {
 				(Zero, R) => {
 					if self.kind == TetrominoKind::I {
@@ -262,35 +290,53 @@ impl Tetromino {
 					p.1 += offest.1;
 				});
 
-				if points.is_out_of_border() || is_collision(&points) {
+				if points.is_out_of_board() || is_collision(&points) {
 					continue;
 				}
 
+				ok = self.points != points;
 				self.points = points;
 				self.rotate_deg = next_deg;
-				ok = true;
 				break;
 			}
 		} else {
+			ok = self.points != next_points;
 			self.points = next_points;
 			self.rotate_deg = next_deg;
-			ok = true;
 		}
 
 		ok
 	}
-}
 
-fn get_init_points(kind: &TetrominoKind, idx: usize) -> [Point; 4] {
-	match kind {
-		TetrominoKind::I => rotate_map::I[idx],
-		TetrominoKind::J => rotate_map::J[idx],
-		TetrominoKind::L => rotate_map::L[idx],
-		TetrominoKind::S => rotate_map::S[idx],
-		TetrominoKind::T => rotate_map::T[idx],
-		TetrominoKind::Z => rotate_map::Z[idx],
-		TetrominoKind::O => [(1, 0), (2, 0), (1, 1), (2, 1)],
-		_ => [(0, 0); 4],
+	pub fn stringify(&self) -> String {
+		let mut content = String::from("#tetromino\n");
+
+		content.push(self.kind.into());
+
+		for p in &self.points.value {
+			content.push_str(&format!(" {} {}", p.0, p.1));
+		}
+
+		content.push_str(&format!(" {}\n", usize::from(self.rotate_deg)));
+
+		content
+	}
+
+	pub fn read_save(&mut self, source: String) {
+		let chunks: Vec<&str> = source.split_ascii_whitespace().collect();
+
+		if chunks.len() != 10 {
+			return;
+		}
+
+		self.kind = TetrominoKind::from(chunks[0].chars().next().unwrap());
+
+		for (i, point) in chunks[1..9].chunks(2).enumerate() {
+			self.points.value[i].0 = point[0].parse::<i32>().unwrap();
+			self.points.value[i].1 = point[1].parse::<i32>().unwrap();
+		}
+
+		self.rotate_deg = RotateDeg::from(chunks[9].parse::<usize>().unwrap());
 	}
 }
 
@@ -339,6 +385,13 @@ mod rotate_map {
 		[(2, 0), (2, 1), (1, 1), (1, 2)],
 		[(2, 2), (1, 2), (1, 1), (0, 1)],
 		[(0, 2), (0, 1), (1, 1), (1, 0)],
+	];
+
+	pub const O: Map = [
+		[(1, 0), (2, 0), (1, 1), (2, 1)],
+		[(1, 0), (2, 0), (1, 1), (2, 1)],
+		[(1, 0), (2, 0), (1, 1), (2, 1)],
+		[(1, 0), (2, 0), (1, 1), (2, 1)],
 	];
 }
 

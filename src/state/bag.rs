@@ -1,14 +1,14 @@
 use super::TetrominoKind;
 
 pub struct Bag {
-	value: [TetrominoKind; 7],
+	kinds: [TetrominoKind; 7],
 	cursor: usize,
 }
 
 impl Bag {
 	pub fn new() -> Self {
 		let mut bag = Self {
-			value: [
+			kinds: [
 				TetrominoKind::I,
 				TetrominoKind::J,
 				TetrominoKind::L,
@@ -26,17 +26,43 @@ impl Bag {
 	}
 
 	fn shuffle(&mut self) {
-		fastrand::shuffle(self.value.as_mut_slice());
+		fastrand::shuffle(self.kinds.as_mut_slice());
 	}
 
 	pub fn next(&mut self) -> TetrominoKind {
-		if self.cursor >= self.value.len() {
+		if self.cursor >= self.kinds.len() {
 			self.shuffle();
 			self.cursor = 0;
 		}
-		let tm_kind = self.value[self.cursor];
+		let tm_kind = self.kinds[self.cursor];
 		self.cursor += 1;
 
 		tm_kind
+	}
+
+	pub fn stringify(&self) -> String {
+		let mut content = String::from("#bag\n");
+
+		for kind in &self.kinds {
+			content.push(char::from(*kind));
+		}
+
+		content.push_str(&format!(" {}\n", self.cursor));
+
+		content
+	}
+
+	pub fn read_save(&mut self, source: String) {
+		let chunks: Vec<&str> = source.split_ascii_whitespace().collect();
+
+		if chunks.len() != 2 {
+			return;
+		}
+
+		for (i, ch) in chunks[0].chars().enumerate() {
+			self.kinds[i] = TetrominoKind::from(ch);
+		}
+
+		self.cursor = chunks[1].parse::<usize>().unwrap();
 	}
 }

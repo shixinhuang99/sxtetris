@@ -2,6 +2,7 @@ use ratatui::{
 	layout::{Alignment, Constraint, Flex, Layout, Rect},
 	widgets::{block::Title, Block, BorderType, Borders},
 };
+
 pub fn centered_rect(
 	rect: Rect,
 	width: Constraint,

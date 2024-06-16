@@ -2,6 +2,7 @@ mod app;
 mod channel;
 mod consts;
 mod handler;
+mod save;
 mod state;
 mod term;
 mod ui;

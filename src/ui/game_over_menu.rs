@@ -21,7 +21,7 @@ pub fn game_over_menu(f: &mut Frame, state: &State) {
 		(0, 0)
 	};
 
-	let mut constraints = vec![Constraint::Length(4), Constraint::Length(10)];
+	let mut constraints = vec![Constraint::Length(4), Constraint::Length(16)];
 
 	if new_score_idx.is_some() {
 		constraints.insert(1, Constraint::Length(6));
@@ -30,7 +30,7 @@ pub fn game_over_menu(f: &mut Frame, state: &State) {
 	let area = centered_rect(
 		f.size(),
 		Constraint::Length(48 + width_offest),
-		Constraint::Length(20 + height_offest),
+		Constraint::Length(26 + height_offest),
 	);
 
 	let block = rounded_block(None);

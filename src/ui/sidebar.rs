@@ -41,6 +41,7 @@ pub fn sidebar(
 		cell_height,
 		cell_width,
 		false,
+		&state.active_tm,
 	);
 
 	let chunks_1 = create_text_chunks(vertical_chunks[1]);

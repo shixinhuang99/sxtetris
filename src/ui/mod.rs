@@ -1,4 +1,5 @@
 mod board;
+mod count_down;
 mod game_over_menu;
 mod list;
 mod pause_menu;
@@ -8,6 +9,7 @@ mod start_menu;
 mod utils;
 
 use board::board;
+use count_down::count_down;
 use game_over_menu::game_over_menu;
 use pause_menu::pause_menu;
 use ratatui::{
@@ -45,7 +47,10 @@ pub fn ui(f: &mut Frame, state: &State) {
 	let (cell_height, cell_width) = calc_cell_size(screen.height);
 
 	#[cfg(feature = "_dev")]
-	log::trace!("cell_height: {}, cell_width: {}", cell_height, cell_width);
+	{
+		log::trace!("screen size: {} x {}", screen.width, screen.height);
+		log::trace!("cell size: {} x {}", cell_width, cell_height);
+	}
 
 	let vertical_area = Layout::vertical([Constraint::Length(
 		cell_height * MATRIX_Y_VISIBLE_LEN_U16,
@@ -69,12 +74,22 @@ pub fn ui(f: &mut Frame, state: &State) {
 			.flex(Flex::Start)
 			.areas::<1>(horizontal_area[1])[0];
 
-	board(f, left_area, &state.board, cell_height, cell_width, true);
+	board(
+		f,
+		left_area,
+		&state.board,
+		cell_height,
+		cell_width,
+		true,
+		&state.active_tm,
+	);
 
 	sidebar(f, right_area, state, cell_height, cell_width);
 
-	if state.game_over {
+	if state.is_game_over {
 		game_over_menu(f, state);
+	} else if state.last_game_count_down > 0 {
+		count_down(f, state);
 	} else if state.paused {
 		pause_menu(f, &state.pause_menu);
 	}
