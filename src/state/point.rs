@@ -1,7 +1,8 @@
-use crate::consts::{BOARD_X_LEN, BOARD_Y_LEN};
+use crate::consts::{BOARD_VISIBLE_Y_LEN, BOARD_X_LEN, BOARD_Y_LEN};
 
 const MAX_Y: i32 = BOARD_Y_LEN as i32 - 1;
 const MAX_X: i32 = BOARD_X_LEN as i32 - 1;
+const MIN_VISIBLE_Y: i32 = BOARD_VISIBLE_Y_LEN as i32;
 
 pub type Point = (i32, i32);
 
@@ -33,10 +34,16 @@ impl Points {
 		self.value.iter().any(|p| p.0 >= MAX_X)
 	}
 
-	pub fn is_out_of_border(&self) -> bool {
+	pub fn is_out_of_board(&self) -> bool {
 		self.value
 			.iter()
 			.any(|p| p.0 < 0 || p.0 > MAX_X || p.1 < 0 || p.1 > MAX_Y)
+	}
+
+	pub fn is_out_of_visible_arae(&self) -> bool {
+		self.value.iter().any(|p| {
+			p.0 < 0 || p.0 > MAX_X || p.1 < MIN_VISIBLE_Y || p.1 > MAX_Y
+		})
 	}
 
 	pub fn usize_points(&self) -> [(usize, usize); 4] {

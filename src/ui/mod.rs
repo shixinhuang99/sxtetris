@@ -76,7 +76,7 @@ pub fn ui(f: &mut Frame, state: &State) {
 
 	sidebar(f, right_area, state, cell_height, cell_width);
 
-	if state.game_over {
+	if state.is_game_over {
 		game_over_menu(f, state);
 	} else if state.paused {
 		pause_menu(f, &state.pause_menu);

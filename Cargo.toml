@@ -13,6 +13,7 @@ include = ["Cargo.toml", "Cargo.lock", "README.md", "LICENSE", "src/**"]
 [dependencies]
 anyhow = "1.0.81"
 crossterm = { version = "0.27.0", features = ["event-stream"] }
+directories = "5.0.1"
 fastrand = "2.0.2"
 futures = "0.3.30"
 log = { version = "0.4.21", optional = true }

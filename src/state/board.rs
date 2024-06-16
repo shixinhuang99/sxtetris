@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 
 use super::{point::Points, Tetromino, TetrominoKind};
 
+#[derive(Clone)]
 pub struct BoardState {
 	pub board: VecDeque<Vec<TetrominoKind>>,
 	pub rows: usize,
@@ -107,5 +108,30 @@ impl BoardState {
 		cnt
 	}
 
-	// pub fn reset(&mut self) {}
+	pub fn stringify(&self) -> String {
+		let mut content = String::from("#board\n");
+
+		for rows in &self.board {
+			for kind in rows {
+				content.push(char::from(*kind));
+			}
+		}
+		content.push('\n');
+
+		content
+	}
+
+	pub fn read_save(&mut self, source: String) {
+		let mut y = 0;
+		let mut x = 0;
+
+		for ch in source.chars() {
+			self.board[y][x] = TetrominoKind::from(ch);
+			x += 1;
+			if x > 9 {
+				x = 0;
+				y += 1;
+			}
+		}
+	}
 }
