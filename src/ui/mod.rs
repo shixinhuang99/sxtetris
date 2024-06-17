@@ -14,6 +14,8 @@ use game_over_menu::game_over_menu;
 use pause_menu::pause_menu;
 use ratatui::{
 	layout::{Constraint, Flex, Layout},
+	style::{Color, Style},
+	widgets::{Block, BorderType, Borders},
 	Frame,
 };
 use scores::scores;
@@ -33,6 +35,13 @@ const MATRIX_X_LEN_U16: u16 = BOARD_X_LEN as u16;
 
 pub fn ui(f: &mut Frame, state: &State) {
 	let screen = f.size();
+
+	let bg_block = Block::new()
+		.borders(Borders::NONE)
+		.border_type(BorderType::Plain)
+		.style(Style::new().bg(Color::Black));
+
+	f.render_widget(bg_block, screen);
 
 	if matches!(state.currently_screen, CurrentlyScreen::StartMenu) {
 		start_menu(f, screen, &state.start_menu);

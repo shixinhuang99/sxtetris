@@ -1,7 +1,7 @@
 use ratatui::{
 	layout::{Constraint, Layout, Rect},
 	style::{Color, Style},
-	widgets::Borders,
+	widgets::{Block, BorderType, Borders},
 	Frame,
 };
 
@@ -44,39 +44,68 @@ pub fn board(
 
 			let tm_kind = board_state.get_cell(x, y_with_offest);
 
-			let mut b = rounded_block(None).border_style(create_style(tm_kind));
+			let piece_style = create_style(tm_kind);
 
-			if active_tm.points.contains(x, y_with_offest) && active_tm.is_blink
-			{
-				b = b.border_style(Style::new().fg(Color::Gray));
-			}
+			let mut piece = if !matches!(
+				tm_kind,
+				TetrominoKind::None | TetrominoKind::Ghost
+			) {
+				let mut outer = Block::new()
+					.borders(Borders::ALL)
+					.border_type(BorderType::QuadrantInside);
+
+				let inner_area = outer.inner(*horizontal_area);
+				let mut insider = Block::new().style(create_style_bg(tm_kind));
+
+				if active_tm.points.contains(x, y_with_offest)
+					&& active_tm.is_blink
+				{
+					outer =
+						outer.border_style(Style::new().fg(Color::DarkGray));
+					insider = insider.style(Style::new().bg(Color::DarkGray));
+				} else {
+					outer = outer.border_style(piece_style);
+				}
+
+				f.render_widget(insider, inner_area);
+
+				outer
+			} else {
+				rounded_block(None).border_style(piece_style)
+			};
 
 			if !is_main_board && *tm_kind == TetrominoKind::None {
-				b = b.borders(Borders::NONE);
+				piece = piece.borders(Borders::NONE);
 			}
 
-			#[cfg(feature = "_dev")]
-			{
-				b = b
-					.title_top(x.to_string())
-					.title_bottom(y_with_offest.to_string());
-			}
-
-			f.render_widget(b, *horizontal_area);
+			f.render_widget(piece, *horizontal_area);
 		}
 	}
 }
 
 fn create_style(tm_kind: &TetrominoKind) -> Style {
 	match tm_kind {
-		TetrominoKind::I => Style::new().fg(Color::Indexed(14)),
-		TetrominoKind::O => Style::new().fg(Color::Indexed(208)),
-		TetrominoKind::T => Style::new().fg(Color::Indexed(13)),
-		TetrominoKind::L => Style::new().fg(Color::Indexed(202)),
-		TetrominoKind::J => Style::new().fg(Color::Indexed(12)),
-		TetrominoKind::S => Style::new().fg(Color::Indexed(10)),
-		TetrominoKind::Z => Style::new().fg(Color::Indexed(9)),
-		TetrominoKind::None => Style::new().fg(Color::Black),
-		TetrominoKind::Ghost => Style::new().fg(Color::White),
+		TetrominoKind::I => Style::new().fg(Color::Cyan),
+		TetrominoKind::O => Style::new().fg(Color::LightYellow),
+		TetrominoKind::T => Style::new().fg(Color::Magenta),
+		TetrominoKind::L => Style::new().fg(Color::Yellow),
+		TetrominoKind::J => Style::new().fg(Color::Blue),
+		TetrominoKind::S => Style::new().fg(Color::Green),
+		TetrominoKind::Z => Style::new().fg(Color::Red),
+		TetrominoKind::None => Style::new().fg(Color::DarkGray),
+		TetrominoKind::Ghost => Style::new().fg(Color::Gray),
+	}
+}
+
+fn create_style_bg(tm_kind: &TetrominoKind) -> Style {
+	match tm_kind {
+		TetrominoKind::I => Style::new().bg(Color::Cyan),
+		TetrominoKind::O => Style::new().bg(Color::LightYellow),
+		TetrominoKind::T => Style::new().bg(Color::Magenta),
+		TetrominoKind::L => Style::new().bg(Color::Yellow),
+		TetrominoKind::J => Style::new().bg(Color::Blue),
+		TetrominoKind::S => Style::new().bg(Color::Green),
+		TetrominoKind::Z => Style::new().bg(Color::Red),
+		_ => unreachable!(),
 	}
 }

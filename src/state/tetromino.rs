@@ -308,7 +308,7 @@ impl Tetromino {
 		ok
 	}
 
-	pub fn stringify(&self) -> String {
+	pub fn serialize(&self) -> String {
 		let mut content = String::from("#tetromino\n");
 
 		content.push(self.kind.into());
@@ -322,7 +322,7 @@ impl Tetromino {
 		content
 	}
 
-	pub fn read_save(&mut self, source: String) {
+	pub fn deserialize(&mut self, source: &str) {
 		let chunks: Vec<&str> = source.split_ascii_whitespace().collect();
 
 		if chunks.len() != 10 {

@@ -23,6 +23,7 @@ use crate::{
 	save::Save,
 };
 
+#[derive(PartialEq)]
 pub enum CurrentlyScreen {
 	StartMenu,
 	Game,
@@ -86,14 +87,15 @@ impl State {
 		}
 	}
 
-	pub fn read_save(&mut self, save: &mut Save) {
+	pub fn read_save(&mut self, save: &Save) {
 		self.scores.clone_from(&save.scores);
-		if let Some(last_game) = save.last_game.take() {
+		if let Some(last_game) = &save.last_game {
 			self.last_game_count_down = 4;
-			self.board.read_save(last_game.board);
-			self.bag.read_save(last_game.bag);
-			self.active_tm.read_save(last_game.active_tm);
-			self.preview_tm.read_save(last_game.preview_tm);
+			self.board.deserialize(&last_game.board);
+			self.bag.deserialize(&last_game.bag);
+			self.active_tm.deserialize(&last_game.active_tm);
+			self.preview_tm.deserialize(&last_game.preview_tm);
+			self.preview_board.update_area(&self.preview_tm);
 			self.level = last_game.level;
 			self.score = last_game.score;
 			self.lines = last_game.lines;

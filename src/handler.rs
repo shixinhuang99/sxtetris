@@ -40,7 +40,7 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 	let mut lock = false;
 	let mut lock_instant = Instant::now();
 
-	let mut blink_interval = interval(Duration::from_millis(150));
+	let mut blink_interval = interval(Duration::from_millis(250));
 	let mut blink_instant = Instant::now();
 
 	loop {
