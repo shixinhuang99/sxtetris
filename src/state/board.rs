@@ -108,7 +108,7 @@ impl BoardState {
 		cnt
 	}
 
-	pub fn stringify(&self) -> String {
+	pub fn serialize(&self) -> String {
 		let mut content = String::from("#board\n");
 
 		for rows in &self.board {
@@ -121,7 +121,7 @@ impl BoardState {
 		content
 	}
 
-	pub fn read_save(&mut self, source: String) {
+	pub fn deserialize(&mut self, source: &str) {
 		let mut y = 0;
 		let mut x = 0;
 

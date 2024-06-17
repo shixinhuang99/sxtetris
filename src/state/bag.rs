@@ -40,7 +40,7 @@ impl Bag {
 		tm_kind
 	}
 
-	pub fn stringify(&self) -> String {
+	pub fn serialize(&self) -> String {
 		let mut content = String::from("#bag\n");
 
 		for kind in &self.kinds {
@@ -52,7 +52,7 @@ impl Bag {
 		content
 	}
 
-	pub fn read_save(&mut self, source: String) {
+	pub fn deserialize(&mut self, source: &str) {
 		let chunks: Vec<&str> = source.split_ascii_whitespace().collect();
 
 		if chunks.len() != 2 {

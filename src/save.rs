@@ -65,10 +65,10 @@ impl Save {
 		}
 
 		if !state.is_game_over {
-			content.push_str(&state.board.stringify());
-			content.push_str(&state.bag.stringify());
-			content.push_str(&state.active_tm.stringify());
-			content.push_str(&state.preview_tm.stringify());
+			content.push_str(&state.board.serialize());
+			content.push_str(&state.bag.serialize());
+			content.push_str(&state.active_tm.serialize());
+			content.push_str(&state.preview_tm.serialize());
 			content.push_str(&format!(
 				"#level\n{}\n#score\n{}\n#lines\n{}\n#combo\n{}",
 				state.level, state.score, state.lines, state.combo
@@ -110,10 +110,6 @@ impl Save {
 		let mut last_game_read = false;
 
 		for (i, line) in content_lines.into_iter().enumerate() {
-			if line.starts_with('#') {
-				continue;
-			}
-
 			let num = i + 1;
 
 			if SCORES.contains(&num) {
