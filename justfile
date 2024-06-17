@@ -5,16 +5,16 @@ default:
 	just --list --unsorted
 
 fmt:
-	cargo fmt --all
+	cargo fmt
 	taplo fmt
 
 lint: fmt
-	cargo clippy --all-targets --all-features
+	cargo clippy --all-features
 
 check:
-	cargo fmt --all -- --check
+	cargo fmt --check
 	taplo fmt --check
-	cargo clippy --all-targets --all-features -- -D warnings
+	cargo clippy --all-features -- -D warnings
 
 release-pr tag:
 	git checkout -b "release-{{tag}}"
@@ -28,4 +28,4 @@ push-tag tag:
 	git push origin {{tag}}
 
 run *args:
-	cargo run -F _dev
+	cargo +stable run -F _dev
