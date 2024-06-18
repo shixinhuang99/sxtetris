@@ -17,7 +17,7 @@ pub enum Event {
 	LockEnd,
 	LockReset,
 	LevelChange(u32),
-	CountDownStart,
+	CountDownStart(u8),
 	CountDown(u8),
 	Blink,
 }

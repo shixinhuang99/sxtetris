@@ -108,7 +108,7 @@ impl State {
 			self.send(Event::GravityReset);
 			self.reset_lock();
 			self.move_ghost_tm();
-			self.send(Event::CountDownStart);
+			self.send(Event::CountDownStart(self.last_game_count_down));
 			self.currently_screen = CurrentlyScreen::Game;
 		} else {
 			self.new_game();

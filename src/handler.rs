@@ -2,7 +2,7 @@ use crossterm::event::{
 	Event as TermEvent, EventStream, KeyCode, KeyEventKind, KeyModifiers,
 };
 use futures::StreamExt;
-use tokio::time::{interval, Duration, Instant, Interval};
+use tokio::time::{interval, sleep, Duration, Instant, Interval};
 
 use crate::channel::{channel, Event, KeyEvent, Receiver, Sender};
 
@@ -124,8 +124,8 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 							lock_instant = Instant::now();
 						}
 					}
-					Event::CountDownStart => {
-						tokio::spawn(count_down_task(tx.clone()));
+					Event::CountDownStart(cnt) => {
+						tokio::spawn(count_down_task(tx.clone(), cnt));
 					}
 					_ => (),
 				}
@@ -164,12 +164,9 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 	}
 }
 
-async fn count_down_task(tx: Sender) {
-	let mut cnt = 4;
-	let mut count_down_interval = interval(Duration::from_secs(1));
-
+async fn count_down_task(tx: Sender, mut cnt: u8) {
 	while cnt > 0 {
-		count_down_interval.tick().await;
+		sleep(Duration::from_secs(1)).await;
 		cnt -= 1;
 		tx.send(Event::CountDown(cnt)).unwrap();
 	}
