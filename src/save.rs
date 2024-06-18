@@ -5,7 +5,7 @@ use directories::ProjectDirs;
 
 use crate::{
 	consts::APP_NAME,
-	state::{CurrentlyScreen, State},
+	state::{Screen, State},
 };
 
 pub struct Save {
@@ -58,9 +58,7 @@ impl Save {
 			content.push_str(&format!("{}\n", score));
 		}
 
-		if state.currently_screen == CurrentlyScreen::StartMenu
-			&& self.last_game.is_none()
-		{
+		if state.screen == Screen::StartMenu && self.last_game.is_none() {
 			return Ok(());
 		}
 

@@ -26,7 +26,7 @@ use crate::{
 	consts::{
 		BOARD_VISIBLE_Y_LEN, BOARD_X_LEN, MIN_CELL_HEIGHT, MIN_CELL_WIDTH,
 	},
-	state::{CurrentlyScreen, State},
+	state::{Screen, State},
 };
 
 const MATRIX_Y_VISIBLE_LEN_U16: u16 = BOARD_VISIBLE_Y_LEN as u16;
@@ -43,7 +43,7 @@ pub fn ui(f: &mut Frame, state: &State) {
 
 	f.render_widget(bg_block, screen);
 
-	if matches!(state.currently_screen, CurrentlyScreen::StartMenu) {
+	if state.screen == Screen::StartMenu {
 		start_menu(f, screen, &state.start_menu);
 
 		if state.show_scores {

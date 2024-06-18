@@ -1,89 +1,184 @@
 use crossterm::event::{
-	Event as TermEvent, EventStream, KeyCode, KeyEventKind, KeyModifiers,
+	Event, EventStream, KeyCode, KeyEventKind, KeyModifiers,
 };
 use futures::StreamExt;
-use tokio::time::{interval, sleep, Duration, Instant, Interval};
+use tokio::{
+	sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+	time::{interval, sleep, Duration, Instant, Interval},
+};
 
-use crate::channel::{channel, Event, KeyEvent, Receiver, Sender};
+type Sender = UnboundedSender<GameEvent>;
+type Receiver = UnboundedReceiver<GameEvent>;
+type SubSender = UnboundedSender<SubEvent>;
+type SubReceiver = UnboundedReceiver<SubEvent>;
 
-pub struct Handler {
+const GRAVITY_LEVEL_LIMIT: u32 = 15;
+
+#[derive(PartialEq)]
+pub enum GameEvent {
+	FocusLost,
+	CtrlC,
+	Up,
+	Down,
+	Left,
+	Right,
+	Space,
+	Enter,
+	Esc,
+	P,
+	Z,
+	Gravity,
+	LockEnd,
+	CountDown(u8),
+	Blink,
+}
+
+enum SubEvent {
+	Pause,
+	PauseCancel,
+	GravityReset,
+	Level(u32),
+	LockReset,
+	LockRefresh,
+}
+
+pub struct MainHandler {
+	tx: Sender,
 	rx: Receiver,
 }
 
-impl Handler {
-	pub fn new(state_rx: Receiver) -> Self {
-		let (tx, rx) = channel();
+impl MainHandler {
+	pub fn new() -> Self {
+		let (tx, rx) = unbounded_channel();
 
-		tokio::spawn(task(tx.clone(), state_rx));
+		tokio::spawn(term_task(tx.clone()));
 
 		Self {
+			tx,
 			rx,
 		}
 	}
 
-	pub async fn next(&mut self) -> Option<Event> {
+	pub async fn recv(&mut self) -> Option<GameEvent> {
 		self.rx.recv().await
+	}
+
+	pub fn create_sub_handler(&self) -> SubHandler {
+		SubHandler::new(self.tx.clone())
 	}
 }
 
-async fn task(tx: Sender, mut state_rx: Receiver) {
+#[derive(Clone)]
+pub struct SubHandler {
+	tx: Sender,
+	sub_tx: SubSender,
+}
+
+impl SubHandler {
+	fn new(tx: Sender) -> Self {
+		let (sub_tx, sub_rx) = unbounded_channel();
+
+		tokio::spawn(gravity_and_lock_task(tx.clone(), sub_rx));
+
+		Self {
+			tx,
+			sub_tx,
+		}
+	}
+
+	pub fn count_down_task(&self, cnt: u8) {
+		tokio::spawn(count_down_task(self.tx.clone(), cnt));
+	}
+
+	pub fn reset_gravity(&self) {
+		self.sub_tx.send(SubEvent::GravityReset).unwrap();
+	}
+
+	pub fn change_level(&self, level: u32) {
+		self.sub_tx.send(SubEvent::Level(level)).unwrap();
+	}
+
+	pub fn reset_lock(&self) {
+		self.sub_tx.send(SubEvent::LockReset).unwrap();
+	}
+
+	pub fn refresh_lock(&self) {
+		self.sub_tx.send(SubEvent::LockRefresh).unwrap();
+	}
+
+	pub fn pause(&self) {
+		self.sub_tx.send(SubEvent::Pause).unwrap();
+	}
+
+	pub fn cancel_pause(&self) {
+		self.sub_tx.send(SubEvent::PauseCancel).unwrap();
+	}
+}
+
+async fn term_task(tx: Sender) {
 	let mut event_stream = EventStream::new();
 
+	while let Some(Ok(event)) = event_stream.next().await {
+		let game_event = match event {
+			Event::Key(key) if key.kind == KeyEventKind::Press => {
+				match key.code {
+					KeyCode::Char('c')
+						if key.modifiers == KeyModifiers::CONTROL =>
+					{
+						GameEvent::CtrlC
+					}
+					KeyCode::Up | KeyCode::Char('i') => GameEvent::Up,
+					KeyCode::Down | KeyCode::Char('k') => GameEvent::Down,
+					KeyCode::Left | KeyCode::Char('j') => GameEvent::Left,
+					KeyCode::Right | KeyCode::Char('l') => GameEvent::Right,
+					KeyCode::Enter => GameEvent::Enter,
+					KeyCode::Char(' ') => GameEvent::Space,
+					KeyCode::Esc => GameEvent::Esc,
+					KeyCode::Char('p') => GameEvent::P,
+					KeyCode::Char('z') => GameEvent::Z,
+					_ => continue,
+				}
+			}
+			Event::FocusLost => GameEvent::FocusLost,
+			_ => continue,
+		};
+		tx.send(game_event).unwrap();
+	}
+}
+
+async fn count_down_task(tx: Sender, cnt: u8) {
+	for n in (0..cnt).rev() {
+		sleep(Duration::from_secs(1)).await;
+		tx.send(GameEvent::CountDown(n)).unwrap();
+	}
+}
+
+async fn gravity_and_lock_task(tx: Sender, mut sub_rx: SubReceiver) {
 	let mut paused = true;
 	let mut paused_instant = Instant::now();
 
 	let mut gravity_interval = interval(gravity_duration(1));
 	let mut gravity_instant = Instant::now();
 
-	let mut lock_interval = interval(Duration::from_millis(500));
-	let mut lock_limit = 15;
 	let mut lock = false;
+	let mut lock_limit = 15;
+	let mut lock_interval = interval(Duration::from_millis(500));
 	let mut lock_instant = Instant::now();
 
-	let mut blink_interval = interval(Duration::from_millis(250));
+	let mut blink_interval = interval(Duration::from_millis(150));
 	let mut blink_instant = Instant::now();
 
-	loop {
-		#[cfg(feature = "_dev")]
-		log::trace!("tx count: {}", tx.strong_count());
+	let mut level = 1;
 
+	loop {
 		tokio::select! {
-			Some(Ok(term_event)) = event_stream.next() => {
-				let event = match term_event {
-					TermEvent::Key(key) if key.kind == KeyEventKind::Press => {
-						let key_event = match key.code {
-							KeyCode::Char('c')
-								if key.modifiers == KeyModifiers::CONTROL =>
-							{
-								KeyEvent::CtrlC
-							}
-							KeyCode::Up | KeyCode::Char('i') => KeyEvent::Up,
-							KeyCode::Down | KeyCode::Char('k') => KeyEvent::Down,
-							KeyCode::Left | KeyCode::Char('j') => KeyEvent::Left,
-							KeyCode::Right | KeyCode::Char('l') => KeyEvent::Right,
-							KeyCode::Enter => KeyEvent::Enter,
-							KeyCode::Char(' ') => KeyEvent::Space,
-							KeyCode::Esc => KeyEvent::Esc,
-							KeyCode::Char('p') => KeyEvent::P,
-							KeyCode::Char('z') => KeyEvent::Z,
-							_ => continue,
-						};
-						Event::Key(key_event)
-					}
-					TermEvent::FocusLost => Event::FocusLost,
-					_ => continue,
-				};
-				if tx.send(event).is_err() {
-					break;
-				}
-			}
-			Some(event) = state_rx.recv() => {
+			Some(event) = sub_rx.recv() => {
 				match event {
-					Event::Pause => {
+					SubEvent::Pause => {
 						paused_instant = Instant::now();
 						paused = true;
 					}
-					Event::PauseCancel => {
+					SubEvent::PauseCancel => {
 						make_time_continue(
 							&paused_instant,
 							&gravity_instant,
@@ -101,22 +196,27 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 						);
 						paused = false;
 					}
-					Event::GravityReset => {
+					SubEvent::GravityReset => {
 						gravity_interval.reset();
 						gravity_instant = Instant::now();
 					}
-					Event::LevelChange(level) => {
-						if level <= 15 {
-							gravity_interval = interval(gravity_duration(level));
+					SubEvent::Level(lv) => {
+						if level == lv {
+							continue;
 						}
+						level = lv;
+						if level > GRAVITY_LEVEL_LIMIT {
+							continue;
+						}
+						gravity_interval = interval(gravity_duration(level));
 					}
-					Event::LockReset => {
+					SubEvent::LockReset => {
 						lock = false;
 						lock_limit = 15;
 						lock_interval.reset();
 						lock_instant = Instant::now();
 					}
-					Event::LockRefresh => {
+					SubEvent::LockRefresh => {
 						if lock_limit > 0 {
 							lock = true;
 							lock_limit -= 1;
@@ -124,20 +224,14 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 							lock_instant = Instant::now();
 						}
 					}
-					Event::CountDownStart(cnt) => {
-						tokio::spawn(count_down_task(tx.clone(), cnt));
-					}
-					_ => (),
 				}
 			}
 			_ = gravity_interval.tick() => {
-				if paused || lock {
+				if paused || lock || level >= GRAVITY_LEVEL_LIMIT {
 					continue;
 				}
 				gravity_instant = Instant::now();
-				if tx.send(Event::Gravity).is_err() {
-					break;
-				}
+				tx.send(GameEvent::Gravity).unwrap();
 			}
 			_ = lock_interval.tick() => {
 				if !lock || paused {
@@ -147,32 +241,24 @@ async fn task(tx: Sender, mut state_rx: Receiver) {
 				lock_limit = 15;
 				lock_interval.reset();
 				lock_instant = Instant::now();
-				if tx.send(Event::LockEnd).is_err() {
-					break;
-				}
+				tx.send(GameEvent::LockEnd).unwrap();
 			}
 			_ = blink_interval.tick() => {
 				if !lock || paused {
 					continue;
 				}
 				blink_instant = Instant::now();
-				if tx.send(Event::Blink).is_err() {
-					break;
-				}
+				tx.send(GameEvent::Blink).unwrap();
 			}
 		}
 	}
 }
 
-async fn count_down_task(tx: Sender, mut cnt: u8) {
-	while cnt > 0 {
-		sleep(Duration::from_secs(1)).await;
-		cnt -= 1;
-		tx.send(Event::CountDown(cnt)).unwrap();
-	}
-}
-
 fn gravity_duration(level: u32) -> Duration {
+	if level >= GRAVITY_LEVEL_LIMIT {
+		return Duration::from_secs(3600);
+	}
+
 	let base = (level - 1) as f32;
 	let duration_secs = (0.8 - base * 0.007).powf(base);
 
@@ -184,10 +270,10 @@ fn gravity_duration(level: u32) -> Duration {
 
 fn make_time_continue(
 	paused_instant: &Instant,
-	instant: &Instant,
+	target_instant: &Instant,
 	interval: &mut Interval,
 ) {
-	let past_time = *paused_instant - *instant;
+	let past_time = *paused_instant - *target_instant;
 	let period = interval.period();
 	if past_time < period {
 		interval.reset_at(Instant::now() + (period - past_time));
