@@ -1,16 +1,21 @@
+use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
+
 use crossterm::event::{
 	Event, EventStream, KeyCode, KeyEventKind, KeyModifiers,
 };
 use futures::StreamExt;
 use tokio::{
-	sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+	sync::{
+		broadcast,
+		mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+	},
 	time::{interval, sleep, Duration, Instant, Interval},
 };
 
 type Sender = UnboundedSender<GameEvent>;
 type Receiver = UnboundedReceiver<GameEvent>;
-type SubSender = UnboundedSender<SubEvent>;
-type SubReceiver = UnboundedReceiver<SubEvent>;
+type SubSender = broadcast::Sender<SubEvent>;
+type SubReceiver = broadcast::Receiver<SubEvent>;
 
 const GRAVITY_LEVEL_LIMIT: u32 = 15;
 
@@ -33,13 +38,27 @@ pub enum GameEvent {
 	Blink,
 }
 
+#[derive(Clone, Debug)]
 enum SubEvent {
 	Pause,
 	PauseCancel,
 	GravityReset,
+	GravityCancel,
 	Level(u32),
-	LockReset,
+	LockCancel,
 	LockRefresh,
+}
+
+static PAUSED: AtomicBool = AtomicBool::new(false);
+
+static LOCKED: AtomicBool = AtomicBool::new(false);
+
+pub fn is_paused() -> bool {
+	PAUSED.load(Relaxed)
+}
+
+pub fn is_locked() -> bool {
+	LOCKED.load(Relaxed)
 }
 
 pub struct MainHandler {
@@ -68,50 +87,72 @@ impl MainHandler {
 	}
 }
 
-#[derive(Clone)]
 pub struct SubHandler {
 	tx: Sender,
 	sub_tx: SubSender,
+	_sub_rx: SubReceiver,
 }
 
 impl SubHandler {
 	fn new(tx: Sender) -> Self {
-		let (sub_tx, sub_rx) = unbounded_channel();
-
-		tokio::spawn(gravity_and_lock_task(tx.clone(), sub_rx));
+		let (sub_tx, _sub_rx) = broadcast::channel(200);
 
 		Self {
 			tx,
 			sub_tx,
+			_sub_rx,
 		}
 	}
 
-	pub fn count_down_task(&self, cnt: u8) {
+	pub fn spawn_count_down_task(&self, cnt: u8) {
 		tokio::spawn(count_down_task(self.tx.clone(), cnt));
 	}
 
+	pub fn spawn_gravity_task(&self) {
+		tokio::spawn(gravity_task(self.tx.clone(), self.sub_tx.subscribe()));
+	}
+
+	pub fn spawn_lock_task(&self) {
+		#[cfg(feature = "_dev")]
+		log::trace!("spawn_lock_task");
+
+		LOCKED.store(true, Relaxed);
+		tokio::spawn(lock_task(self.tx.clone(), self.sub_tx.subscribe()));
+	}
+
+	fn send(&self, event: SubEvent) {
+		self.sub_tx.send(event).unwrap();
+	}
+
 	pub fn reset_gravity(&self) {
-		self.sub_tx.send(SubEvent::GravityReset).unwrap();
+		self.send(SubEvent::GravityReset);
+	}
+
+	pub fn cancel_grvity(&self) {
+		self.send(SubEvent::GravityCancel);
 	}
 
 	pub fn change_level(&self, level: u32) {
-		self.sub_tx.send(SubEvent::Level(level)).unwrap();
+		self.send(SubEvent::Level(level));
 	}
 
-	pub fn reset_lock(&self) {
-		self.sub_tx.send(SubEvent::LockReset).unwrap();
+	pub fn cancel_lock(&self) {
+		LOCKED.store(false, Relaxed);
+		self.send(SubEvent::LockCancel);
 	}
 
 	pub fn refresh_lock(&self) {
-		self.sub_tx.send(SubEvent::LockRefresh).unwrap();
+		self.send(SubEvent::LockRefresh);
 	}
 
-	pub fn pause(&self) {
-		self.sub_tx.send(SubEvent::Pause).unwrap();
+	pub fn pause(&mut self) {
+		PAUSED.store(true, Relaxed);
+		self.send(SubEvent::Pause);
 	}
 
-	pub fn cancel_pause(&self) {
-		self.sub_tx.send(SubEvent::PauseCancel).unwrap();
+	pub fn cancel_pause(&mut self) {
+		PAUSED.store(false, Relaxed);
+		self.send(SubEvent::PauseCancel);
 	}
 }
 
@@ -153,98 +194,121 @@ async fn count_down_task(tx: Sender, cnt: u8) {
 	}
 }
 
-async fn gravity_and_lock_task(tx: Sender, mut sub_rx: SubReceiver) {
-	let mut paused = true;
+async fn gravity_task(tx: Sender, mut sub_rx: SubReceiver) {
 	let mut paused_instant = Instant::now();
-
-	let mut gravity_interval = interval(gravity_duration(1));
-	let mut gravity_instant = Instant::now();
-
-	let mut lock = false;
-	let mut lock_limit = 15;
-	let mut lock_interval = interval(Duration::from_millis(500));
-	let mut lock_instant = Instant::now();
-
-	let mut blink_interval = interval(Duration::from_millis(150));
-	let mut blink_instant = Instant::now();
 
 	let mut level = 1;
 
+	let mut gravity_interval = interval(gravity_duration(level));
+	let mut gravity_instant = Instant::now();
+
+	gravity_interval.reset();
+
 	loop {
 		tokio::select! {
-			Some(event) = sub_rx.recv() => {
+			Ok(event) = sub_rx.recv() => {
 				match event {
 					SubEvent::Pause => {
 						paused_instant = Instant::now();
-						paused = true;
 					}
 					SubEvent::PauseCancel => {
 						make_time_continue(
+							&mut gravity_interval,
 							&paused_instant,
 							&gravity_instant,
-							&mut gravity_interval,
 						);
-						make_time_continue(
-							&paused_instant,
-							&lock_instant,
-							&mut lock_interval,
-						);
-						make_time_continue(
-							&paused_instant,
-							&blink_instant,
-							&mut blink_interval,
-						);
-						paused = false;
+					}
+					SubEvent::GravityCancel => {
+						break;
 					}
 					SubEvent::GravityReset => {
 						gravity_interval.reset();
 						gravity_instant = Instant::now();
 					}
 					SubEvent::Level(lv) => {
-						if level == lv {
-							continue;
-						}
 						level = lv;
-						if level > GRAVITY_LEVEL_LIMIT {
-							continue;
-						}
-						gravity_interval = interval(gravity_duration(level));
-					}
-					SubEvent::LockReset => {
-						lock = false;
-						lock_limit = 15;
-						lock_interval.reset();
-						lock_instant = Instant::now();
-					}
-					SubEvent::LockRefresh => {
-						if lock_limit > 0 {
-							lock = true;
-							lock_limit -= 1;
-							lock_interval.reset();
-							lock_instant = Instant::now();
+						if level <= GRAVITY_LEVEL_LIMIT {
+							gravity_interval = interval(gravity_duration(level));
 						}
 					}
+					_ => (),
 				}
 			}
 			_ = gravity_interval.tick() => {
-				if paused || lock || level >= GRAVITY_LEVEL_LIMIT {
+				if is_paused() || is_locked() || level >= GRAVITY_LEVEL_LIMIT {
 					continue;
 				}
 				gravity_instant = Instant::now();
 				tx.send(GameEvent::Gravity).unwrap();
 			}
+		}
+	}
+}
+
+async fn lock_task(tx: Sender, mut sub_rx: SubReceiver) {
+	let mut paused_instant = Instant::now();
+
+	let mut lock_limit = 15;
+	let mut lock_interval = interval(Duration::from_secs(600));
+	let mut lock_instant = Instant::now();
+
+	let mut blink_interval = interval(Duration::from_millis(150));
+	let mut blink_instant = Instant::now();
+
+	lock_interval.reset();
+
+	loop {
+		tokio::select! {
+			Ok(event) = sub_rx.recv() => {
+				#[cfg(feature = "_dev")]
+				log::trace!("{:?}", event);
+
+				match event {
+					SubEvent::Pause => {
+						paused_instant = Instant::now();
+					}
+					SubEvent::PauseCancel => {
+						make_time_continue(
+							&mut lock_interval,
+							&paused_instant,
+							&lock_instant,
+						);
+						make_time_continue(
+							&mut blink_interval,
+							&paused_instant,
+							&blink_instant,
+						);
+					}
+					SubEvent::LockCancel => {
+						break;
+					}
+					SubEvent::LockRefresh => {
+						if lock_limit > 0 {
+							lock_limit -= 1;
+
+							#[cfg(feature = "_dev")]
+							log::trace!("lock_interval.reset()");
+
+							lock_interval.reset();
+							lock_instant = Instant::now();
+						}
+					}
+					_ => (),
+				}
+			}
 			_ = lock_interval.tick() => {
-				if !lock || paused {
+				if is_paused() {
 					continue;
 				}
-				lock = false;
-				lock_limit = 15;
-				lock_interval.reset();
-				lock_instant = Instant::now();
+				#[cfg(feature = "_dev")]
+				log::trace!("lock_interval.tick()");
+
+				LOCKED.store(false, Relaxed);
 				tx.send(GameEvent::LockEnd).unwrap();
+				break;
 			}
 			_ = blink_interval.tick() => {
-				if !lock || paused {
+				if is_paused() {
 					continue;
 				}
 				blink_instant = Instant::now();
@@ -269,11 +333,11 @@ fn gravity_duration(level: u32) -> Duration {
 }
 
 fn make_time_continue(
-	paused_instant: &Instant,
-	target_instant: &Instant,
 	interval: &mut Interval,
+	paused_instant: &Instant,
+	instant: &Instant,
 ) {
-	let past_time = *paused_instant - *target_instant;
+	let past_time = *paused_instant - *instant;
 	let period = interval.period();
 	if past_time < period {
 		interval.reset_at(Instant::now() + (period - past_time));

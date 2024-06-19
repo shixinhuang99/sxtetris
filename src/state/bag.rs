@@ -25,7 +25,7 @@ impl Bag {
 		bag
 	}
 
-	fn shuffle(&mut self) {
+	pub fn shuffle(&mut self) {
 		fastrand::shuffle(self.kinds.as_mut_slice());
 	}
 

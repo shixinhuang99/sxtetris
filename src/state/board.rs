@@ -30,6 +30,13 @@ impl BoardState {
 		}
 	}
 
+	pub fn reset(&mut self) {
+		self.board = VecDeque::from(vec![
+			vec![TetrominoKind::None; self.cols];
+			self.rows
+		]);
+	}
+
 	pub fn get_cell(&self, x: usize, y: usize) -> &TetrominoKind {
 		&self.board[y][x]
 	}

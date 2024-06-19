@@ -26,6 +26,7 @@ use crate::{
 	consts::{
 		BOARD_VISIBLE_Y_LEN, BOARD_X_LEN, MIN_CELL_HEIGHT, MIN_CELL_WIDTH,
 	},
+	handler::is_paused,
 	state::{Screen, State},
 };
 
@@ -83,23 +84,15 @@ pub fn ui(f: &mut Frame, state: &State) {
 			.flex(Flex::Start)
 			.areas::<1>(horizontal_area[1])[0];
 
-	board(
-		f,
-		left_area,
-		&state.board,
-		cell_height,
-		cell_width,
-		true,
-		&state.active_tm,
-	);
+	board(f, left_area, state, cell_height, cell_width, true);
 
 	sidebar(f, right_area, state, cell_height, cell_width);
 
 	if state.is_game_over {
 		game_over_menu(f, state);
-	} else if state.last_game_count_down > 0 {
+	} else if state.count_down > 0 {
 		count_down(f, state);
-	} else if state.paused {
+	} else if is_paused() {
 		pause_menu(f, &state.pause_menu);
 	}
 

@@ -12,14 +12,14 @@ use consts::{
 	PAUSE_MENU_ITEMS, START_MENU_ITEMS,
 };
 pub use list::ListState;
-use tetromino::TetrominoAction;
-pub use tetromino::{Tetromino, TetrominoKind};
+pub use tetromino::TetrominoKind;
+use tetromino::{Tetromino, TetrominoAction};
 
 use crate::{
 	consts::{
 		BOARD_X_LEN, BOARD_Y_LEN, PREVIEW_BOARD_X_LEN, PREVIEW_BOARD_Y_LEN,
 	},
-	handler::{GameEvent, SubHandler},
+	handler::{is_locked, is_paused, GameEvent, SubHandler},
 	save::Save,
 };
 
@@ -30,28 +30,27 @@ pub enum Screen {
 }
 
 pub struct State {
-	handler: SubHandler,
+	pub handler: SubHandler,
+	pub running: bool,
+	pub screen: Screen,
+	pub start_menu: ListState,
+	pub pause_menu: ListState,
+	pub game_over_menu: ListState,
+	pub bag: Bag,
 	pub board: BoardState,
 	pub preview_board: BoardState,
 	pub active_tm: Tetromino,
 	ghost_tm: Tetromino,
 	pub preview_tm: Tetromino,
-	pub bag: Bag,
-	pub running: bool,
-	pub paused: bool,
 	pub level: u32,
 	pub score: u32,
 	pub lines: u32,
 	pub combo: i32,
-	pub screen: Screen,
 	pub scores: Vec<u32>,
 	pub show_scores: bool,
-	lock: bool,
-	pub start_menu: ListState,
-	pub pause_menu: ListState,
 	pub is_game_over: bool,
-	pub game_over_menu: ListState,
-	pub last_game_count_down: u8,
+	pub count_down: u8,
+	pub blinking: bool,
 }
 
 impl State {
@@ -60,30 +59,29 @@ impl State {
 
 		Self {
 			handler,
+			running: true,
+			screen: Screen::StartMenu,
+			start_menu: ListState::new(&START_MENU_ITEMS),
+			pause_menu: ListState::new(&PAUSE_MENU_ITEMS),
+			game_over_menu: ListState::new(&GAME_OVER_MENU_ITEMS),
 			board: BoardState::new(BOARD_Y_LEN, BOARD_X_LEN),
 			preview_board: BoardState::new(
 				PREVIEW_BOARD_Y_LEN,
 				PREVIEW_BOARD_X_LEN,
 			),
 			active_tm: Tetromino::new(TetrominoKind::None),
-			ghost_tm: Tetromino::new(TetrominoKind::Ghost),
 			preview_tm: Tetromino::new_preview(bag.next()),
+			ghost_tm: Tetromino::new(TetrominoKind::Ghost),
 			bag,
-			running: true,
-			paused: true,
 			level: 1,
 			score: 0,
 			lines: 0,
 			combo: -1,
-			screen: Screen::StartMenu,
 			scores: vec![0; 10],
 			show_scores: false,
-			lock: false,
-			start_menu: ListState::new(&START_MENU_ITEMS),
-			pause_menu: ListState::new(&PAUSE_MENU_ITEMS),
 			is_game_over: false,
-			game_over_menu: ListState::new(&GAME_OVER_MENU_ITEMS),
-			last_game_count_down: 0,
+			count_down: 0,
+			blinking: false,
 		}
 	}
 
@@ -95,7 +93,7 @@ impl State {
 			Screen::Game => {
 				if self.is_game_over {
 					self.update_game_over_menu(event);
-				} else if self.paused {
+				} else if is_paused() {
 					self.update_pause_menu(event);
 				} else {
 					self.update_game(event);
@@ -124,20 +122,21 @@ impl State {
 			GameEvent::Z => {
 				self.rotate_tm(TetrominoAction::RotateLeft);
 			}
-			GameEvent::Esc | GameEvent::P => {
-				self.pause();
+			GameEvent::Esc | GameEvent::P | GameEvent::FocusLost => {
+				self.handler.pause();
 			}
 			GameEvent::Gravity => {
 				self.move_tm(TetrominoAction::SoftDrop);
 			}
-			GameEvent::FocusLost => {
-				self.pause();
-			}
 			GameEvent::LockEnd => {
+				#[cfg(feature = "_dev")]
+				log::trace!("GameEvent::LockEnd");
+
+				self.blinking = false;
 				self.gen_next_tm();
 			}
 			GameEvent::Blink => {
-				self.active_tm.is_blink = !self.active_tm.is_blink;
+				self.blinking = !self.blinking;
 			}
 			_ => (),
 		};
@@ -191,9 +190,12 @@ impl State {
 			GameEvent::Enter => {
 				match self.pause_menu.cursor {
 					RESUME => {
-						self.cancel_pause();
+						self.handler.cancel_pause();
 					}
 					NEW_GAME => {
+						self.handler.cancel_lock();
+						self.handler.cancel_grvity();
+						self.handler.cancel_pause();
 						self.new_game();
 					}
 					SCORES => {
@@ -209,14 +211,15 @@ impl State {
 				if self.show_scores {
 					self.show_scores = false;
 				} else {
-					self.cancel_pause();
+					self.handler.cancel_pause();
 					self.pause_menu.reset();
 				}
 			}
 			GameEvent::CountDown(v) => {
-				self.last_game_count_down = v;
-				if self.last_game_count_down == 0 {
-					self.cancel_pause();
+				self.count_down = v;
+				if self.count_down == 0 {
+					self.handler.cancel_pause();
+					self.handler.spawn_gravity_task();
 				}
 			}
 			_ => (),
@@ -236,6 +239,7 @@ impl State {
 			GameEvent::Enter => {
 				match self.game_over_menu.cursor {
 					NEW_GAME => {
+						self.handler.cancel_pause();
 						self.new_game();
 					}
 					SCORES => {
@@ -257,44 +261,67 @@ impl State {
 	}
 
 	fn play(&mut self) {
-		if self.last_game_count_down > 0 {
+		if self.count_down > 0 {
 			self.screen = Screen::Game;
 			self.move_ghost_tm();
-			self.handler.reset_gravity();
-			self.reset_lock();
-			self.handler.count_down_task(self.last_game_count_down);
+			self.handler.pause();
+			self.handler.spawn_count_down_task(self.count_down);
 		} else {
 			self.new_game();
 		}
 	}
 
 	fn new_game(&mut self) {
-		let handler = self.handler.clone();
-		let scores = self.scores.clone();
-
-		*self = Self::new(handler);
-
+		self.board.reset();
+		self.preview_board.reset();
+		self.bag.shuffle();
+		self.level = 1;
+		self.score = 0;
+		self.lines = 0;
+		self.combo = -1;
+		self.pause_menu.reset();
+		self.game_over_menu.reset();
+		self.is_game_over = false;
+		self.blinking = false;
 		self.screen = Screen::Game;
-		self.scores = scores;
-		self.handler.change_level(1);
-		self.handler.reset_gravity();
-		self.gen_next_tm();
-		self.cancel_pause();
+
+		self.active_tm = Tetromino::new(self.preview_tm.kind);
+		self.move_ghost_tm();
+		self.board.update_area(&self.active_tm);
+		self.preview_board.clear_area(&self.preview_tm);
+		self.preview_tm = Tetromino::new_preview(self.bag.next());
+		self.preview_board.update_area(&self.preview_tm);
+
+		self.handler.spawn_gravity_task();
+		self.handler.cancel_pause();
+	}
+
+	fn game_over(&mut self) {
+		self.is_game_over = true;
+		self.handler.pause();
+		self.handler.cancel_grvity();
+		self.handler.cancel_lock();
+		self.scores.push(self.score);
+		self.scores.sort_unstable_by(|a, b| b.cmp(a));
+		self.scores.truncate(10);
 	}
 
 	fn gen_next_tm(&mut self) {
-		self.reset_lock();
-		self.handler.reset_gravity();
+		#[cfg(feature = "_dev")]
+		log::trace!("gen_next_tm");
 
 		if self.active_tm.points.is_out_of_visible_arae() {
 			self.game_over();
 			return;
 		}
 
-		let lines = self.board.check_and_clear_line();
-		self.update_stats(lines);
+		let old_level = self.level;
 
-		self.handler.change_level(self.level);
+		self.update_stats();
+
+		if self.level > old_level {
+			self.handler.change_level(self.level);
+		}
 
 		self.active_tm = Tetromino::new(self.preview_tm.kind);
 
@@ -308,6 +335,8 @@ impl State {
 		self.preview_board.clear_area(&self.preview_tm);
 		self.preview_tm = Tetromino::new_preview(self.bag.next());
 		self.preview_board.update_area(&self.preview_tm);
+
+		self.handler.reset_gravity();
 	}
 
 	fn move_tm(&mut self, tm_action: TetrominoAction) {
@@ -350,12 +379,17 @@ impl State {
 			}
 
 			if tm_action == TetrominoAction::HardDrop {
+				#[cfg(feature = "_dev")]
+				log::trace!("tm_action == TetrominoAction::HardDrop");
+
 				self.gen_next_tm();
 				self.score += distance as u32 * 2;
 				return;
 			}
 
 			self.refresh_lock();
+
+			return;
 		}
 
 		self.check_lock();
@@ -373,32 +407,42 @@ impl State {
 			self.move_ghost_tm();
 			self.board.update_area(&self.active_tm);
 			self.refresh_lock();
+			return;
 		}
 
 		self.check_lock();
 	}
 
 	fn check_lock(&mut self) {
-		if self.lock {
+		if !self.active_tm.same_position(&self.ghost_tm) || is_locked() {
 			return;
 		}
-		if self.active_tm.same_position(&self.ghost_tm) {
-			self.lock = true;
-			self.handler.refresh_lock();
-		}
+
+		#[cfg(feature = "_dev")]
+		log::trace!("check_lock");
+
+		self.handler.spawn_lock_task();
 	}
 
 	fn refresh_lock(&mut self) {
 		let fit_together = self.active_tm.same_position(&self.ghost_tm);
-		if self.lock {
+		if is_locked() {
 			if !fit_together {
-				self.reset_lock();
+				#[cfg(feature = "_dev")]
+				log::trace!("cancel_lock");
+
+				self.handler.cancel_lock();
 			} else {
+				#[cfg(feature = "_dev")]
+				log::trace!("refresh_lock");
+
 				self.handler.refresh_lock();
 			}
 		} else if fit_together {
-			self.lock = true;
-			self.handler.refresh_lock();
+			#[cfg(feature = "_dev")]
+			log::trace!("fit_together spawn_lock_task");
+
+			self.handler.spawn_lock_task();
 		}
 	}
 
@@ -435,28 +479,20 @@ impl State {
 			.is_collision_with_ignore(&tm.points, &self.active_tm.points)
 	}
 
-	fn pause(&mut self) {
-		self.paused = true;
-		self.handler.pause();
-	}
+	fn update_stats(&mut self) {
+		let lines = self.board.check_and_clear_line();
 
-	fn cancel_pause(&mut self) {
-		self.paused = false;
-		self.handler.cancel_pause();
-	}
-
-	fn update_stats(&mut self, lines: u32) {
-		self.lines += lines;
-		self.level = self.lines / 10 + 1;
-		let base_score = match lines {
-			1 => 100,
-			2 => 300,
-			3 => 500,
-			4 => 800,
-			_ => 0,
-		};
-		self.score += base_score * self.level;
 		if lines > 0 {
+			self.lines += lines;
+			self.level = self.lines / 10 + 1;
+			let base_score = match lines {
+				1 => 100,
+				2 => 300,
+				3 => 500,
+				4 => 800,
+				_ => 0,
+			};
+			self.score += base_score * self.level;
 			self.combo += 1;
 		} else {
 			self.combo = -1;
@@ -466,23 +502,10 @@ impl State {
 		}
 	}
 
-	fn reset_lock(&mut self) {
-		self.lock = false;
-		self.handler.reset_lock();
-	}
-
-	fn game_over(&mut self) {
-		self.is_game_over = true;
-		self.scores.push(self.score);
-		self.scores.sort_unstable_by(|a, b| b.cmp(a));
-		self.scores.truncate(10);
-		self.pause();
-	}
-
 	pub fn read_save(&mut self, save: &Save) {
 		self.scores.clone_from(&save.scores);
 		if let Some(last_game) = &save.last_game {
-			self.last_game_count_down = 3;
+			self.count_down = 3;
 			self.board.deserialize(&last_game.board);
 			self.bag.deserialize(&last_game.bag);
 			self.active_tm.deserialize(&last_game.active_tm);

@@ -121,7 +121,6 @@ pub struct Tetromino {
 	pub kind: TetrominoKind,
 	pub points: Points,
 	rotate_deg: RotateDeg,
-	pub is_blink: bool,
 }
 
 impl Tetromino {
@@ -142,7 +141,6 @@ impl Tetromino {
 			kind,
 			points,
 			rotate_deg: RotateDeg::Zero,
-			is_blink: false,
 		}
 	}
 

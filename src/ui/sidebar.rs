@@ -34,15 +34,7 @@ pub fn sidebar(
 	.areas::<2>(vertical_chunks[0]);
 
 	render_text(f, "NEXT".to_string(), chunks_0[0], Color::Blue);
-	board(
-		f,
-		chunks_0[1],
-		&state.preview_board,
-		cell_height,
-		cell_width,
-		false,
-		&state.active_tm,
-	);
+	board(f, chunks_0[1], state, cell_height, cell_width, false);
 
 	let chunks_1 = create_text_chunks(vertical_chunks[1]);
 	render_text(f, "SCORE".to_string(), chunks_1[0], Color::Blue);
