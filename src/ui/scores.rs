@@ -11,10 +11,8 @@ use super::utils::{centered_rect, rounded_block};
 use crate::state::State;
 
 pub fn scores(f: &mut Frame, state: &State) {
-	let screen = f.size();
-
 	let area =
-		centered_rect(screen, Constraint::Length(58), Constraint::Length(42));
+		centered_rect(f.size(), Constraint::Length(58), Constraint::Length(42));
 
 	f.render_widget(Clear, area);
 

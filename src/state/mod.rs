@@ -274,7 +274,7 @@ impl State {
 	fn new_game(&mut self) {
 		self.board.reset();
 		self.preview_board.reset();
-		self.bag.shuffle();
+		self.bag.reset();
 		self.level = 1;
 		self.score = 0;
 		self.lines = 0;
@@ -284,7 +284,6 @@ impl State {
 		self.is_game_over = false;
 		self.blinking = false;
 		self.screen = Screen::Game;
-		self.bag = Bag::new();
 
 		self.active_tm = Tetromino::new(self.bag.next());
 		self.update_ghost_tm();
@@ -420,6 +419,7 @@ impl State {
 		let fit_together = self.active_tm.same_position(&self.ghost_tm);
 		if is_locked() {
 			if !fit_together {
+				self.blinking = false;
 				self.handler.cancel_lock();
 			} else {
 				self.handler.refresh_lock();

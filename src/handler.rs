@@ -17,7 +17,7 @@ type Receiver = UnboundedReceiver<GameEvent>;
 type SubSender = broadcast::Sender<SubEvent>;
 type SubReceiver = broadcast::Receiver<SubEvent>;
 
-const GRAVITY_LEVEL_LIMIT: u32 = 15;
+const MAX_GRAVITY_LEVEL: u32 = 15;
 
 #[derive(PartialEq)]
 pub enum GameEvent {
@@ -224,7 +224,7 @@ async fn gravity_task(tx: Sender, mut sub_rx: SubReceiver) {
 					}
 					SubEvent::Level(lv) => {
 						level = lv;
-						if level <= GRAVITY_LEVEL_LIMIT {
+						if level <= MAX_GRAVITY_LEVEL {
 							gravity_interval = interval(gravity_duration(level));
 						}
 					}

@@ -6,7 +6,7 @@ const MIN_VISIBLE_Y: i32 = BOARD_VISIBLE_Y_LEN as i32;
 
 pub type Point = (i32, i32);
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Points {
 	pub value: [Point; 4],
 }
@@ -61,18 +61,5 @@ impl Points {
 		self.value
 			.iter()
 			.any(|p| p.1 as usize == y && p.0 as usize == x)
-	}
-}
-
-impl PartialEq for Points {
-	fn eq(&self, other: &Self) -> bool {
-		for i in 0..4 {
-			if self.value[i].0 != other.value[i].0
-				|| self.value[i].1 != other.value[i].1
-			{
-				return false;
-			}
-		}
-		true
 	}
 }

@@ -79,7 +79,7 @@ impl Save {
 	}
 
 	pub fn read(&mut self) -> Result<()> {
-		use section_map::*;
+		use line_map::*;
 
 		if !self.file.exists() {
 			fs::create_dir_all(&self.dir)?;
@@ -149,7 +149,7 @@ impl Save {
 	}
 }
 
-mod section_map {
+mod line_map {
 	pub const SCORES: std::ops::Range<usize> = 2..12;
 
 	pub const BOARD: usize = 13;

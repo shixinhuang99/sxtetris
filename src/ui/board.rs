@@ -21,6 +21,7 @@ pub fn board(
 	} else {
 		&state.preview_board
 	};
+
 	let rows = if is_main_board {
 		board.rows / 2
 	} else {
@@ -50,31 +51,29 @@ pub fn board(
 
 			let piece_style = create_style(tm_kind);
 
-			let mut piece = if !matches!(
-				tm_kind,
-				TetrominoKind::None | TetrominoKind::Ghost
-			) {
-				let mut out = Block::new()
+			let mut piece = if tm_kind.is_none_or_ghost() {
+				rounded_block(None).border_style(piece_style)
+			} else {
+				let mut outer = Block::new()
 					.borders(Borders::ALL)
 					.border_type(BorderType::QuadrantInside);
 
-				let inner_area = out.inner(*horizontal_area);
+				let inner_area = outer.inner(*horizontal_area);
 				let mut inside = Block::new().style(create_style_bg(tm_kind));
 
 				if state.active_tm.points.contains(x, y_with_offest)
 					&& state.blinking
 				{
-					out = out.border_style(Style::new().fg(Color::DarkGray));
+					outer =
+						outer.border_style(Style::new().fg(Color::DarkGray));
 					inside = inside.style(Style::new().bg(Color::DarkGray));
 				} else {
-					out = out.border_style(piece_style);
+					outer = outer.border_style(piece_style);
 				}
 
 				f.render_widget(inside, inner_area);
 
-				out
-			} else {
-				rounded_block(None).border_style(piece_style)
+				outer
 			};
 
 			if !is_main_board && *tm_kind == TetrominoKind::None {

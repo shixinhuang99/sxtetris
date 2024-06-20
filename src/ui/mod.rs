@@ -96,9 +96,8 @@ pub fn ui(f: &mut Frame, state: &State) {
 }
 
 fn calc_cell_size(screen_height: u16) -> (u16, u16) {
-	let cell_height =
-		MIN_CELL_HEIGHT.max(screen_height / MATRIX_Y_VISIBLE_LEN_U16);
-	let cell_width = MIN_CELL_WIDTH.max((cell_height as f32 * 1.8) as u16);
+	let height = MIN_CELL_HEIGHT.max(screen_height / MATRIX_Y_VISIBLE_LEN_U16);
+	let width = MIN_CELL_WIDTH.max((height as f32 * 1.8) as u16);
 
-	(cell_height, cell_width)
+	(height, width)
 }

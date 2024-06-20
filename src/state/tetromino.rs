@@ -43,6 +43,10 @@ impl TetrominoKind {
 			_ => [(0, 0); 4],
 		}
 	}
+
+	pub fn is_none_or_ghost(&self) -> bool {
+		matches!(self, TetrominoKind::None | TetrominoKind::Ghost)
+	}
 }
 
 impl From<char> for TetrominoKind {

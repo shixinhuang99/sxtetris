@@ -25,7 +25,7 @@ impl Bag {
 		bag
 	}
 
-	pub fn shuffle(&mut self) {
+	fn shuffle(&mut self) {
 		fastrand::shuffle(self.kinds.as_mut_slice());
 	}
 
@@ -38,6 +38,11 @@ impl Bag {
 		self.cursor += 1;
 
 		tm_kind
+	}
+
+	pub fn reset(&mut self) {
+		self.shuffle();
+		self.cursor = 0;
 	}
 
 	pub fn serialize(&self) -> String {
