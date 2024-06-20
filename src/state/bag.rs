@@ -40,6 +40,11 @@ impl Bag {
 		tm_kind
 	}
 
+	pub fn reset(&mut self) {
+		self.shuffle();
+		self.cursor = 0;
+	}
+
 	pub fn serialize(&self) -> String {
 		let mut content = String::from("#bag\n");
 

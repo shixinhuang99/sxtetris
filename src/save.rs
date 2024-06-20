@@ -5,7 +5,7 @@ use directories::ProjectDirs;
 
 use crate::{
 	consts::APP_NAME,
-	state::{CurrentlyScreen, State},
+	state::{Screen, State},
 };
 
 pub struct Save {
@@ -58,9 +58,7 @@ impl Save {
 			content.push_str(&format!("{}\n", score));
 		}
 
-		if state.currently_screen == CurrentlyScreen::StartMenu
-			&& self.last_game.is_none()
-		{
+		if state.screen == Screen::StartMenu && self.last_game.is_none() {
 			return Ok(());
 		}
 
@@ -81,7 +79,7 @@ impl Save {
 	}
 
 	pub fn read(&mut self) -> Result<()> {
-		use section_map::*;
+		use line_map::*;
 
 		if !self.file.exists() {
 			fs::create_dir_all(&self.dir)?;
@@ -151,7 +149,7 @@ impl Save {
 	}
 }
 
-mod section_map {
+mod line_map {
 	pub const SCORES: std::ops::Range<usize> = 2..12;
 
 	pub const BOARD: usize = 13;

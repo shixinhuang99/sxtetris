@@ -13,21 +13,18 @@ impl BoardState {
 	pub fn new(rows: usize, cols: usize) -> Self {
 		let board = VecDeque::from(vec![vec![TetrominoKind::None; cols]; rows]);
 
-		#[cfg(feature = "_dev")]
-		{
-			log::trace!("rows: {}, cols: {}", rows, cols);
-			log::trace!(
-				"board rows: {}, board cols: {}",
-				board.len(),
-				board[0].len()
-			);
-		}
-
 		Self {
 			board,
 			rows,
 			cols,
 		}
+	}
+
+	pub fn reset(&mut self) {
+		self.board = VecDeque::from(vec![
+			vec![TetrominoKind::None; self.cols];
+			self.rows
+		]);
 	}
 
 	pub fn get_cell(&self, x: usize, y: usize) -> &TetrominoKind {
@@ -66,35 +63,25 @@ impl BoardState {
 		let ignore_points = ignore.usize_points();
 
 		points.usize_points().iter().any(|p| {
-			if ignore_points
-				.iter()
-				.any(|other| p.0 == other.0 && p.1 == other.1)
-			{
+			if ignore_points.iter().any(|other| p == other) {
 				return false;
 			}
-			!matches!(
-				self.board[p.1][p.0],
-				TetrominoKind::None | TetrominoKind::Ghost
-			)
+			!self.board[p.1][p.0].is_none_or_ghost()
 		})
 	}
 
 	pub fn is_collision(&self, points: &Points) -> bool {
-		points.usize_points().iter().any(|p| {
-			!matches!(
-				self.board[p.1][p.0],
-				TetrominoKind::None | TetrominoKind::Ghost
-			)
-		})
+		points
+			.usize_points()
+			.iter()
+			.any(|p| !self.board[p.1][p.0].is_none_or_ghost())
 	}
 
 	pub fn check_and_clear_line(&mut self) -> u32 {
 		let mut cnt = 0;
 
 		self.board.retain(|line| {
-			if line.iter().any(|tm_kind| {
-				matches!(tm_kind, TetrominoKind::None | TetrominoKind::Ghost)
-			}) {
+			if line.iter().any(|tm_kind| tm_kind.is_none_or_ghost()) {
 				return true;
 			}
 			cnt += 1;

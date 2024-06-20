@@ -11,10 +11,8 @@ use super::utils::{centered_rect, rounded_block};
 use crate::state::State;
 
 pub fn count_down(f: &mut Frame, state: &State) {
-	let screen = f.size();
-
 	let area =
-		centered_rect(screen, Constraint::Length(16), Constraint::Length(10));
+		centered_rect(f.size(), Constraint::Length(16), Constraint::Length(10));
 
 	f.render_widget(Clear, area);
 
@@ -26,7 +24,7 @@ pub fn count_down(f: &mut Frame, state: &State) {
 
 	let text = BigText::builder()
 		.pixel_size(PixelSize::Full)
-		.lines([Line::raw(state.last_game_count_down.to_string())])
+		.lines([Line::raw(state.count_down.to_string())])
 		.style(Style::new().fg(Color::White))
 		.build()
 		.unwrap();

@@ -4,9 +4,9 @@ pub struct ListState {
 }
 
 impl ListState {
-	pub fn new(names: &[&'static str]) -> Self {
+	pub fn new(items: &[&'static str]) -> Self {
 		Self {
-			items: Vec::from(names),
+			items: Vec::from(items),
 			cursor: 0,
 		}
 	}

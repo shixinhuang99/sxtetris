@@ -6,21 +6,26 @@ use ratatui::{
 };
 
 use super::utils::rounded_block;
-use crate::state::{BoardState, Tetromino, TetrominoKind};
+use crate::state::{State, TetrominoKind};
 
 pub fn board(
 	f: &mut Frame,
 	rect: Rect,
-	board_state: &BoardState,
+	state: &State,
 	cell_height: u16,
 	cell_width: u16,
 	is_main_board: bool,
-	active_tm: &Tetromino,
 ) {
-	let rows = if is_main_board {
-		board_state.rows / 2
+	let board = if is_main_board {
+		&state.board
 	} else {
-		board_state.rows
+		&state.preview_board
+	};
+
+	let rows = if is_main_board {
+		board.rows / 2
+	} else {
+		board.rows
 	};
 
 	let vertical_chunks =
@@ -31,7 +36,7 @@ pub fn board(
 		let horinzontal_chunks =
 			Layout::horizontal(vec![
 				Constraint::Length(cell_width);
-				board_state.cols
+				board.cols
 			])
 			.split(*vertical_area);
 
@@ -42,36 +47,33 @@ pub fn board(
 				y
 			};
 
-			let tm_kind = board_state.get_cell(x, y_with_offest);
+			let tm_kind = board.get_cell(x, y_with_offest);
 
 			let piece_style = create_style(tm_kind);
 
-			let mut piece = if !matches!(
-				tm_kind,
-				TetrominoKind::None | TetrominoKind::Ghost
-			) {
+			let mut piece = if tm_kind.is_none_or_ghost() {
+				rounded_block(None).border_style(piece_style)
+			} else {
 				let mut outer = Block::new()
 					.borders(Borders::ALL)
 					.border_type(BorderType::QuadrantInside);
 
 				let inner_area = outer.inner(*horizontal_area);
-				let mut insider = Block::new().style(create_style_bg(tm_kind));
+				let mut inside = Block::new().style(create_style_bg(tm_kind));
 
-				if active_tm.points.contains(x, y_with_offest)
-					&& active_tm.is_blink
+				if state.active_tm.points.contains(x, y_with_offest)
+					&& state.blinking
 				{
 					outer =
 						outer.border_style(Style::new().fg(Color::DarkGray));
-					insider = insider.style(Style::new().bg(Color::DarkGray));
+					inside = inside.style(Style::new().bg(Color::DarkGray));
 				} else {
 					outer = outer.border_style(piece_style);
 				}
 
-				f.render_widget(insider, inner_area);
+				f.render_widget(inside, inner_area);
 
 				outer
-			} else {
-				rounded_block(None).border_style(piece_style)
 			};
 
 			if !is_main_board && *tm_kind == TetrominoKind::None {
