@@ -55,8 +55,6 @@ pub struct State {
 
 impl State {
 	pub fn new(handler: SubHandler) -> Self {
-		let mut bag = Bag::new();
-
 		Self {
 			handler,
 			running: true,
@@ -69,10 +67,10 @@ impl State {
 				PREVIEW_BOARD_Y_LEN,
 				PREVIEW_BOARD_X_LEN,
 			),
+			bag: Bag::new(),
 			active_tm: Tetromino::new(TetrominoKind::None),
-			preview_tm: Tetromino::new_preview(bag.next()),
+			preview_tm: Tetromino::new_preview(TetrominoKind::None),
 			ghost_tm: Tetromino::new(TetrominoKind::Ghost),
-			bag,
 			level: 1,
 			score: 0,
 			lines: 0,
@@ -86,6 +84,14 @@ impl State {
 	}
 
 	pub fn receive_event(&mut self, event: GameEvent) {
+		if let GameEvent::CountDown(v) = event {
+			self.count_down = v;
+			if self.count_down == 0 {
+				self.handler.cancel_pause();
+				self.handler.spawn_gravity_task();
+			}
+			return;
+		}
 		match self.screen {
 			Screen::StartMenu => {
 				self.update_start_menu(event);
@@ -94,6 +100,9 @@ impl State {
 				if self.is_game_over {
 					self.update_game_over_menu(event);
 				} else if is_paused() {
+					if self.count_down > 0 {
+						return;
+					}
 					self.update_pause_menu(event);
 				} else {
 					self.update_game(event);
@@ -129,10 +138,6 @@ impl State {
 				self.move_tm(TetrominoAction::SoftDrop);
 			}
 			GameEvent::LockEnd => {
-				#[cfg(feature = "_dev")]
-				log::trace!("GameEvent::LockEnd");
-
-				self.blinking = false;
 				self.gen_next_tm();
 			}
 			GameEvent::Blink => {
@@ -215,13 +220,6 @@ impl State {
 					self.pause_menu.reset();
 				}
 			}
-			GameEvent::CountDown(v) => {
-				self.count_down = v;
-				if self.count_down == 0 {
-					self.handler.cancel_pause();
-					self.handler.spawn_gravity_task();
-				}
-			}
 			_ => (),
 		}
 	}
@@ -263,7 +261,9 @@ impl State {
 	fn play(&mut self) {
 		if self.count_down > 0 {
 			self.screen = Screen::Game;
-			self.move_ghost_tm();
+			self.update_ghost_tm();
+			self.board.update_area(&self.active_tm);
+			self.preview_board.update_area(&self.preview_tm);
 			self.handler.pause();
 			self.handler.spawn_count_down_task(self.count_down);
 		} else {
@@ -284,11 +284,11 @@ impl State {
 		self.is_game_over = false;
 		self.blinking = false;
 		self.screen = Screen::Game;
+		self.bag = Bag::new();
 
-		self.active_tm = Tetromino::new(self.preview_tm.kind);
-		self.move_ghost_tm();
+		self.active_tm = Tetromino::new(self.bag.next());
+		self.update_ghost_tm();
 		self.board.update_area(&self.active_tm);
-		self.preview_board.clear_area(&self.preview_tm);
 		self.preview_tm = Tetromino::new_preview(self.bag.next());
 		self.preview_board.update_area(&self.preview_tm);
 
@@ -307,9 +307,6 @@ impl State {
 	}
 
 	fn gen_next_tm(&mut self) {
-		#[cfg(feature = "_dev")]
-		log::trace!("gen_next_tm");
-
 		if self.active_tm.points.is_out_of_visible_arae() {
 			self.game_over();
 			return;
@@ -330,7 +327,8 @@ impl State {
 			return;
 		}
 
-		self.move_ghost_tm();
+		self.blinking = false;
+		self.update_ghost_tm();
 		self.board.update_area(&self.active_tm);
 		self.preview_board.clear_area(&self.preview_tm);
 		self.preview_tm = Tetromino::new_preview(self.bag.next());
@@ -370,7 +368,7 @@ impl State {
 					| TetrominoAction::RotateLeft
 					| TetrominoAction::RotateRight
 			) {
-				self.move_ghost_tm();
+				self.update_ghost_tm();
 			};
 			self.board.update_area(&self.active_tm);
 
@@ -379,11 +377,9 @@ impl State {
 			}
 
 			if tm_action == TetrominoAction::HardDrop {
-				#[cfg(feature = "_dev")]
-				log::trace!("tm_action == TetrominoAction::HardDrop");
-
-				self.gen_next_tm();
 				self.score += distance as u32 * 2;
+				self.handler.cancel_lock();
+				self.gen_next_tm();
 				return;
 			}
 
@@ -404,7 +400,7 @@ impl State {
 		}) {
 			self.board.clear_area(&self.active_tm);
 			self.active_tm = virtual_tm;
-			self.move_ghost_tm();
+			self.update_ghost_tm();
 			self.board.update_area(&self.active_tm);
 			self.refresh_lock();
 			return;
@@ -417,10 +413,6 @@ impl State {
 		if !self.active_tm.same_position(&self.ghost_tm) || is_locked() {
 			return;
 		}
-
-		#[cfg(feature = "_dev")]
-		log::trace!("check_lock");
-
 		self.handler.spawn_lock_task();
 	}
 
@@ -428,25 +420,16 @@ impl State {
 		let fit_together = self.active_tm.same_position(&self.ghost_tm);
 		if is_locked() {
 			if !fit_together {
-				#[cfg(feature = "_dev")]
-				log::trace!("cancel_lock");
-
 				self.handler.cancel_lock();
 			} else {
-				#[cfg(feature = "_dev")]
-				log::trace!("refresh_lock");
-
 				self.handler.refresh_lock();
 			}
 		} else if fit_together {
-			#[cfg(feature = "_dev")]
-			log::trace!("fit_together spawn_lock_task");
-
 			self.handler.spawn_lock_task();
 		}
 	}
 
-	fn move_ghost_tm(&mut self) {
+	fn update_ghost_tm(&mut self) {
 		let mut virtual_tm = self.active_tm.clone();
 
 		let bottom_point =

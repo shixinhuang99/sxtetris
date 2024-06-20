@@ -214,9 +214,6 @@ impl Tetromino {
 			next_points.value[i].1 += v.1;
 		}
 
-		#[cfg(feature = "_dev")]
-		log::trace!("next points: {:?}", next_points.value);
-
 		let mut ok = false;
 
 		if next_points.is_out_of_board() || is_collision(&next_points) {

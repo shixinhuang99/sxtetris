@@ -13,16 +13,6 @@ impl BoardState {
 	pub fn new(rows: usize, cols: usize) -> Self {
 		let board = VecDeque::from(vec![vec![TetrominoKind::None; cols]; rows]);
 
-		#[cfg(feature = "_dev")]
-		{
-			log::trace!("rows: {}, cols: {}", rows, cols);
-			log::trace!(
-				"board rows: {}, board cols: {}",
-				board.len(),
-				board[0].len()
-			);
-		}
-
 		Self {
 			board,
 			rows,

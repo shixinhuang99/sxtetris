@@ -56,12 +56,6 @@ pub fn ui(f: &mut Frame, state: &State) {
 
 	let (cell_height, cell_width) = calc_cell_size(screen.height);
 
-	#[cfg(feature = "_dev")]
-	{
-		log::trace!("screen size: {} x {}", screen.width, screen.height);
-		log::trace!("cell size: {} x {}", cell_width, cell_height);
-	}
-
 	let vertical_area = Layout::vertical([Constraint::Length(
 		cell_height * MATRIX_Y_VISIBLE_LEN_U16,
 	)])

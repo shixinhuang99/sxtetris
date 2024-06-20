@@ -95,7 +95,7 @@ pub struct SubHandler {
 
 impl SubHandler {
 	fn new(tx: Sender) -> Self {
-		let (sub_tx, _sub_rx) = broadcast::channel(200);
+		let (sub_tx, _sub_rx) = broadcast::channel(100);
 
 		Self {
 			tx,
@@ -113,9 +113,6 @@ impl SubHandler {
 	}
 
 	pub fn spawn_lock_task(&self) {
-		#[cfg(feature = "_dev")]
-		log::trace!("spawn_lock_task");
-
 		LOCKED.store(true, Relaxed);
 		tokio::spawn(lock_task(self.tx.clone(), self.sub_tx.subscribe()));
 	}
@@ -235,7 +232,7 @@ async fn gravity_task(tx: Sender, mut sub_rx: SubReceiver) {
 				}
 			}
 			_ = gravity_interval.tick() => {
-				if is_paused() || is_locked() || level >= GRAVITY_LEVEL_LIMIT {
+				if is_paused() || is_locked() {
 					continue;
 				}
 				gravity_instant = Instant::now();
@@ -249,7 +246,7 @@ async fn lock_task(tx: Sender, mut sub_rx: SubReceiver) {
 	let mut paused_instant = Instant::now();
 
 	let mut lock_limit = 15;
-	let mut lock_interval = interval(Duration::from_secs(600));
+	let mut lock_interval = interval(Duration::from_millis(500));
 	let mut lock_instant = Instant::now();
 
 	let mut blink_interval = interval(Duration::from_millis(150));
@@ -260,9 +257,6 @@ async fn lock_task(tx: Sender, mut sub_rx: SubReceiver) {
 	loop {
 		tokio::select! {
 			Ok(event) = sub_rx.recv() => {
-				#[cfg(feature = "_dev")]
-				log::trace!("{:?}", event);
-
 				match event {
 					SubEvent::Pause => {
 						paused_instant = Instant::now();
@@ -285,10 +279,6 @@ async fn lock_task(tx: Sender, mut sub_rx: SubReceiver) {
 					SubEvent::LockRefresh => {
 						if lock_limit > 0 {
 							lock_limit -= 1;
-
-							#[cfg(feature = "_dev")]
-							log::trace!("lock_interval.reset()");
-
 							lock_interval.reset();
 							lock_instant = Instant::now();
 						}
@@ -300,9 +290,6 @@ async fn lock_task(tx: Sender, mut sub_rx: SubReceiver) {
 				if is_paused() {
 					continue;
 				}
-				#[cfg(feature = "_dev")]
-				log::trace!("lock_interval.tick()");
-
 				LOCKED.store(false, Relaxed);
 				tx.send(GameEvent::LockEnd).unwrap();
 				break;
@@ -319,15 +306,8 @@ async fn lock_task(tx: Sender, mut sub_rx: SubReceiver) {
 }
 
 fn gravity_duration(level: u32) -> Duration {
-	if level >= GRAVITY_LEVEL_LIMIT {
-		return Duration::from_secs(3600);
-	}
-
 	let base = (level - 1) as f32;
 	let duration_secs = (0.8 - base * 0.007).powf(base);
-
-	#[cfg(feature = "_dev")]
-	log::trace!("gravity duration secs: {}", duration_secs);
 
 	Duration::from_secs_f32(duration_secs)
 }
