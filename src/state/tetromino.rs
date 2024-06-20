@@ -90,7 +90,7 @@ pub enum TetrominoAction {
 }
 
 #[derive(Clone, Copy)]
-enum RotateDeg {
+pub enum RotateDeg {
 	Zero,
 	R,
 	L,
@@ -124,7 +124,7 @@ impl From<RotateDeg> for usize {
 pub struct Tetromino {
 	pub kind: TetrominoKind,
 	pub points: Points,
-	rotate_deg: RotateDeg,
+	pub rotate_deg: RotateDeg,
 }
 
 impl Tetromino {
@@ -148,36 +148,59 @@ impl Tetromino {
 		}
 	}
 
-	pub fn walk(&mut self, action: &TetrominoAction) -> bool {
-		if match action {
-			TetrominoAction::SoftDrop => self.points.is_touched_bottom(),
-			TetrominoAction::Left => self.points.is_touched_left(),
-			TetrominoAction::Right => self.points.is_touched_right(),
-			_ => unreachable!(),
-		} {
-			false
-		} else {
-			match action {
-				TetrominoAction::SoftDrop => self.points.update(|p| p.1 += 1),
-				TetrominoAction::Left => self.points.update(|p| p.0 -= 1),
-				TetrominoAction::Right => self.points.update(|p| p.0 += 1),
-				_ => unreachable!(),
+	pub fn can_move<F>(
+		&self,
+		action: &TetrominoAction,
+		is_collision: F,
+	) -> Option<Points>
+	where
+		F: Fn(&Points) -> bool,
+	{
+		let mut points = self.points.clone();
+
+		let ret = match action {
+			TetrominoAction::SoftDrop => {
+				if points.is_touched_bottom() {
+					return None;
+				}
+				points.update(|p| p.1 += 1);
+				Some(points)
 			}
-			true
+			TetrominoAction::Left => {
+				if points.is_touched_left() {
+					return None;
+				}
+				points.update(|p| p.0 -= 1);
+				Some(points)
+			}
+			TetrominoAction::Right => {
+				if points.is_touched_right() {
+					return None;
+				}
+				points.update(|p| p.0 += 1);
+				Some(points)
+			}
+			_ => unreachable!(),
+		};
+
+		if let Some(points) = ret {
+			if is_collision(&points) {
+				return None;
+			}
+			Some(points)
+		} else {
+			None
 		}
 	}
 
-	pub fn same_position(&self, other: &Self) -> bool {
-		self.points == other.points
-	}
-
-	pub fn rotate<F>(
-		&mut self,
+	pub fn can_rotate<F>(
+		&self,
 		action: &TetrominoAction,
+		active_tm_points: &Points,
 		is_collision: F,
-	) -> bool
+	) -> Option<(Points, RotateDeg)>
 	where
-		F: Fn(&Points) -> bool,
+		F: Fn(&Points, &Points) -> bool,
 	{
 		use RotateDeg::*;
 
@@ -210,17 +233,17 @@ impl Tetromino {
 			_ => unreachable!(),
 		};
 
-		let mut next_points =
+		let mut fisrt_rotate_points =
 			Points::new(self.kind.init_points(next_deg.into()));
 
 		for (i, v) in diff.into_iter().enumerate() {
-			next_points.value[i].0 += v.0;
-			next_points.value[i].1 += v.1;
+			fisrt_rotate_points.value[i].0 += v.0;
+			fisrt_rotate_points.value[i].1 += v.1;
 		}
 
-		let mut ok = false;
-
-		if next_points.is_out_of_board() || is_collision(&next_points) {
+		if fisrt_rotate_points.is_out_of_board()
+			|| is_collision(&fisrt_rotate_points, active_tm_points)
+		{
 			let kick_offest = match (&self.rotate_deg, next_deg) {
 				(Zero, R) => {
 					if self.kind == TetrominoKind::I {
@@ -282,29 +305,37 @@ impl Tetromino {
 			};
 
 			for offest in kick_offest {
-				let mut points = next_points.clone();
+				let mut kick_points = fisrt_rotate_points.clone();
 
-				points.update(|p| {
+				kick_points.update(|p| {
 					p.0 += offest.0;
 					p.1 += offest.1;
 				});
 
-				if points.is_out_of_board() || is_collision(&points) {
+				if kick_points.is_out_of_board()
+					|| is_collision(&kick_points, active_tm_points)
+					|| is_collision(&kick_points, &fisrt_rotate_points)
+				{
 					continue;
 				}
 
-				ok = self.points != points;
-				self.points = points;
-				self.rotate_deg = next_deg;
-				break;
+				if self.points != kick_points {
+					return Some((kick_points, next_deg));
+				} else {
+					return None;
+				}
 			}
-		} else {
-			ok = self.points != next_points;
-			self.points = next_points;
-			self.rotate_deg = next_deg;
 		}
 
-		ok
+		if self.points != fisrt_rotate_points {
+			Some((fisrt_rotate_points, next_deg))
+		} else {
+			None
+		}
+	}
+
+	pub fn same_position(&self, other: &Self) -> bool {
+		self.points == other.points
 	}
 
 	pub fn serialize(&self) -> String {

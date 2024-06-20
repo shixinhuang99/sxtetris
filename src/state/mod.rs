@@ -12,6 +12,7 @@ use consts::{
 	PAUSE_MENU_ITEMS, START_MENU_ITEMS,
 };
 pub use list::ListState;
+use point::Points;
 pub use tetromino::TetrominoKind;
 use tetromino::{Tetromino, TetrominoAction};
 
@@ -22,6 +23,8 @@ use crate::{
 	handler::{is_locked, is_paused, GameEvent, SubHandler},
 	save::Save,
 };
+
+const BOARD_Y_LEN_I32: i32 = BOARD_Y_LEN as i32;
 
 #[derive(PartialEq)]
 pub enum Screen {
@@ -89,6 +92,7 @@ impl State {
 			if self.count_down == 0 {
 				self.handler.cancel_pause();
 				self.handler.spawn_gravity_task();
+				self.check_lock();
 			}
 			return;
 		}
@@ -337,29 +341,19 @@ impl State {
 	}
 
 	fn move_tm(&mut self, tm_action: TetrominoAction) {
-		let next_tm = if tm_action == TetrominoAction::HardDrop {
-			let mut next = self.ghost_tm.clone();
-			next.kind = self.active_tm.kind;
-
-			Some(next)
+		let next_points = if tm_action == TetrominoAction::HardDrop {
+			Some(self.ghost_tm.points.clone())
 		} else {
-			let mut virtual_tm = self.active_tm.clone();
-
-			if !virtual_tm.walk(&tm_action)
-				|| self.is_collision_ignore_self(&virtual_tm)
-			{
-				None
-			} else {
-				Some(virtual_tm)
-			}
+			self.active_tm.can_move(&tm_action, |points| {
+				self.is_collision_ignore_self(points)
+			})
 		};
 
-		if let Some(tm) = next_tm {
-			let distance =
-				tm.points.value[0].1 - self.active_tm.points.value[0].1;
+		if let Some(points) = next_points {
+			let distance = points.value[0].1 - self.active_tm.points.value[0].1;
 
 			self.board.clear_area(&self.active_tm);
-			self.active_tm = tm;
+			self.active_tm.points = points;
 			if matches!(
 				tm_action,
 				TetrominoAction::Left
@@ -391,14 +385,16 @@ impl State {
 	}
 
 	fn rotate_tm(&mut self, tm_action: TetrominoAction) {
-		let mut virtual_tm = self.active_tm.clone();
-
-		if virtual_tm.rotate(&tm_action, |points| {
-			self.board
-				.is_collision_with_ignore(points, &self.active_tm.points)
-		}) {
+		if let Some((next_points, next_deg)) = self.active_tm.can_rotate(
+			&tm_action,
+			&self.active_tm.points,
+			|points, ignore| {
+				self.board.is_collision_with_ignore(points, ignore)
+			},
+		) {
 			self.board.clear_area(&self.active_tm);
-			self.active_tm = virtual_tm;
+			self.active_tm.points = next_points;
+			self.active_tm.rotate_deg = next_deg;
 			self.update_ghost_tm();
 			self.board.update_area(&self.active_tm);
 			self.refresh_lock();
@@ -430,24 +426,29 @@ impl State {
 	}
 
 	fn update_ghost_tm(&mut self) {
-		let mut virtual_tm = self.active_tm.clone();
-
-		let bottom_point =
-			virtual_tm.points.value.iter().max_by(|a, b| a.1.cmp(&b.1));
+		let bottom_point = self
+			.active_tm
+			.points
+			.value
+			.iter()
+			.max_by(|a, b| a.1.cmp(&b.1));
 
 		if let Some(point) = bottom_point {
-			let mut distance = BOARD_Y_LEN as i32 - point.1 - 1;
-			let mut points = virtual_tm.points.clone();
+			let mut virtual_tm = self.active_tm.clone();
+			let mut distance = BOARD_Y_LEN_I32 - point.1 - 1;
+
 			while distance > 0 {
-				if !virtual_tm.walk(&TetrominoAction::SoftDrop)
-					|| self.is_collision_ignore_self(&virtual_tm)
-				{
+				if let Some(next_points) = virtual_tm
+					.can_move(&TetrominoAction::SoftDrop, |points| {
+						self.is_collision_ignore_self(points)
+					}) {
+					virtual_tm.points = next_points;
+					distance -= 1;
+				} else {
 					break;
 				}
-				points = virtual_tm.points.clone();
-				distance -= 1;
 			}
-			virtual_tm.points = points;
+
 			self.board.clear_area_if(&self.ghost_tm, |kind| {
 				*kind == TetrominoKind::Ghost
 			});
@@ -457,9 +458,9 @@ impl State {
 		}
 	}
 
-	fn is_collision_ignore_self(&self, tm: &Tetromino) -> bool {
+	fn is_collision_ignore_self(&self, points: &Points) -> bool {
 		self.board
-			.is_collision_with_ignore(&tm.points, &self.active_tm.points)
+			.is_collision_with_ignore(points, &self.active_tm.points)
 	}
 
 	fn update_stats(&mut self) {
