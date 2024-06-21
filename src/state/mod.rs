@@ -52,6 +52,8 @@ pub struct State {
 	pub is_game_over: bool,
 	pub count_down: u8,
 	pub blinking: bool,
+	pub show_help: bool,
+	pub show_about: bool,
 }
 
 impl State {
@@ -81,6 +83,8 @@ impl State {
 			is_game_over: false,
 			count_down: 0,
 			blinking: false,
+			show_help: false,
+			show_about: false,
 		}
 	}
 
@@ -167,6 +171,12 @@ impl State {
 					SCORES => {
 						self.show_scores = true;
 					}
+					HELP => {
+						self.show_help = true;
+					}
+					ABOUT => {
+						self.show_about = true;
+					}
 					QUIT => {
 						self.running = false;
 					}
@@ -176,6 +186,10 @@ impl State {
 			GameEvent::Esc => {
 				if self.show_scores {
 					self.show_scores = false;
+				} else if self.show_help {
+					self.show_help = false;
+				} else if self.show_about {
+					self.show_about = false;
 				} else {
 					self.running = false;
 				}
@@ -208,6 +222,9 @@ impl State {
 					SCORES => {
 						self.show_scores = true;
 					}
+					HELP => {
+						self.show_help = true;
+					}
 					QUIT => {
 						self.running = false;
 					}
@@ -217,6 +234,8 @@ impl State {
 			GameEvent::Esc | GameEvent::P => {
 				if self.show_scores {
 					self.show_scores = false;
+				} else if self.show_help {
+					self.show_help = false;
 				} else {
 					self.handler.cancel_pause();
 					self.pause_menu.reset();

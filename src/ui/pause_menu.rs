@@ -8,7 +8,7 @@ use crate::state::ListState;
 
 pub fn pause_menu(f: &mut Frame, list_state: &ListState) {
 	let area =
-		centered_rect(f.size(), Constraint::Length(44), Constraint::Length(24));
+		centered_rect(f.size(), Constraint::Length(44), Constraint::Length(30));
 
 	let block = rounded_block(Some("PAUSED"));
 

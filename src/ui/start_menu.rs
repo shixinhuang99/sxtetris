@@ -1,5 +1,5 @@
 use ratatui::{
-	layout::{Constraint, Flex, Layout, Rect},
+	layout::{Constraint, Layout, Rect},
 	style::{Color, Style},
 	text::{Line, Span},
 	Frame,
@@ -13,7 +13,7 @@ pub fn start_menu(f: &mut Frame, rect: Rect, list_state: &ListState) {
 	let outer_area = centered_rect(
 		rect,
 		Constraint::Percentage(60),
-		Constraint::Percentage(60),
+		Constraint::Percentage(90),
 	);
 
 	let chunks = Layout::vertical([
@@ -22,9 +22,8 @@ pub fn start_menu(f: &mut Frame, rect: Rect, list_state: &ListState) {
 	])
 	.areas::<2>(outer_area);
 
-	let title_area = Layout::horizontal([Constraint::Length(64)])
-		.flex(Flex::Center)
-		.areas::<1>(chunks[0])[0];
+	let title_area =
+		centered_rect(chunks[0], Constraint::Length(64), Constraint::Length(8));
 
 	let colors = [
 		Color::White,
