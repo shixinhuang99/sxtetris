@@ -24,15 +24,15 @@ use start_menu::start_menu;
 
 use crate::{
 	consts::{
-		BOARD_VISIBLE_Y_LEN, BOARD_X_LEN, MIN_CELL_HEIGHT, MIN_CELL_WIDTH,
+		BOARD_VISIBLE_ROWS, BOARD_COLS, MIN_CELL_HEIGHT, MIN_CELL_WIDTH,
 	},
 	handler::is_paused,
 	state::{Screen, State},
 };
 
-const MATRIX_Y_VISIBLE_LEN_U16: u16 = BOARD_VISIBLE_Y_LEN as u16;
+const MATRIX_Y_VISIBLE_LEN_U16: u16 = BOARD_VISIBLE_ROWS as u16;
 
-const MATRIX_X_LEN_U16: u16 = BOARD_X_LEN as u16;
+const MATRIX_X_LEN_U16: u16 = BOARD_COLS as u16;
 
 pub fn ui(f: &mut Frame, state: &State) {
 	let screen = f.size();

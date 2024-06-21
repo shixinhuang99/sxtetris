@@ -1,12 +1,12 @@
-use crate::consts::{BOARD_VISIBLE_Y_LEN, BOARD_X_LEN, BOARD_Y_LEN};
+use crate::consts::{BOARD_COLS, BOARD_ROWS, BOARD_VISIBLE_ROWS};
 
-const MAX_Y: i32 = BOARD_Y_LEN as i32 - 1;
-const MAX_X: i32 = BOARD_X_LEN as i32 - 1;
-const MIN_VISIBLE_Y: i32 = BOARD_VISIBLE_Y_LEN as i32;
+const MAX_Y: i32 = BOARD_ROWS as i32 - 1;
+const MAX_X: i32 = BOARD_COLS as i32 - 1;
+const MIN_VISIBLE_Y: i32 = BOARD_VISIBLE_ROWS as i32;
 
 pub type Point = (i32, i32);
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq)]
 pub struct Points {
 	pub value: [Point; 4],
 }

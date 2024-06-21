@@ -17,14 +17,12 @@ pub use tetromino::TetrominoKind;
 use tetromino::{Tetromino, TetrominoAction};
 
 use crate::{
-	consts::{
-		BOARD_X_LEN, BOARD_Y_LEN, PREVIEW_BOARD_X_LEN, PREVIEW_BOARD_Y_LEN,
-	},
+	consts::{BOARD_COLS, BOARD_ROWS, PREVIEW_BOARD_COLS, PREVIEW_BOARD_ROWS},
 	handler::{is_locked, is_paused, GameEvent, SubHandler},
 	save::Save,
 };
 
-const BOARD_Y_LEN_I32: i32 = BOARD_Y_LEN as i32;
+const BOARD_ROWS_I32: i32 = BOARD_ROWS as i32;
 
 #[derive(PartialEq)]
 pub enum Screen {
@@ -65,10 +63,10 @@ impl State {
 			start_menu: ListState::new(&START_MENU_ITEMS),
 			pause_menu: ListState::new(&PAUSE_MENU_ITEMS),
 			game_over_menu: ListState::new(&GAME_OVER_MENU_ITEMS),
-			board: BoardState::new(BOARD_Y_LEN, BOARD_X_LEN),
+			board: BoardState::new(BOARD_ROWS, BOARD_COLS),
 			preview_board: BoardState::new(
-				PREVIEW_BOARD_Y_LEN,
-				PREVIEW_BOARD_X_LEN,
+				PREVIEW_BOARD_ROWS,
+				PREVIEW_BOARD_COLS,
 			),
 			bag: Bag::new(),
 			active_tm: Tetromino::new(TetrominoKind::None),
@@ -425,6 +423,7 @@ impl State {
 		}
 	}
 
+	// must call before update active tetromino area
 	fn update_ghost_tm(&mut self) {
 		let bottom_point = self
 			.active_tm
@@ -435,7 +434,7 @@ impl State {
 
 		if let Some(point) = bottom_point {
 			let mut virtual_tm = self.active_tm.clone();
-			let mut distance = BOARD_Y_LEN_I32 - point.1 - 1;
+			let mut distance = BOARD_ROWS_I32 - point.1 - 1;
 
 			while distance > 0 {
 				if let Some(next_points) = virtual_tm
@@ -494,7 +493,6 @@ impl State {
 			self.bag.deserialize(&last_game.bag);
 			self.active_tm.deserialize(&last_game.active_tm);
 			self.preview_tm.deserialize(&last_game.preview_tm);
-			self.preview_board.update_area(&self.preview_tm);
 			self.level = last_game.level;
 			self.score = last_game.score;
 			self.lines = last_game.lines;

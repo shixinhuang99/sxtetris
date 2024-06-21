@@ -1,5 +1,7 @@
 use super::point::{Point, Points};
-use crate::consts::BOARD_VISIBLE_Y_LEN;
+use crate::consts::BOARD_VISIBLE_ROWS;
+
+const BOARD_VISIBLE_ROWS_I32: i32 = BOARD_VISIBLE_ROWS as i32;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum TetrominoKind {
@@ -131,7 +133,7 @@ impl Tetromino {
 	pub fn new(kind: TetrominoKind) -> Self {
 		let mut tm = Self::new_preview(kind);
 
-		tm.points.update(|p| p.1 += BOARD_VISIBLE_Y_LEN as i32);
+		tm.points.update(|p| p.1 += BOARD_VISIBLE_ROWS_I32);
 
 		tm
 	}
@@ -321,10 +323,12 @@ impl Tetromino {
 
 				if self.points != kick_points {
 					return Some((kick_points, next_deg));
-				} else {
-					return None;
 				}
+
+				break;
 			}
+
+			return None;
 		}
 
 		if self.points != fisrt_rotate_points {
@@ -396,6 +400,13 @@ mod rotate_map {
 		[(0, 0), (1, 2), (1, 1), (1, 0)],
 	];
 
+	pub const O: Map = [
+		[(1, 0), (2, 0), (1, 1), (2, 1)],
+		[(1, 0), (2, 0), (1, 1), (2, 1)],
+		[(1, 0), (2, 0), (1, 1), (2, 1)],
+		[(1, 0), (2, 0), (1, 1), (2, 1)],
+	];
+
 	pub const S: Map = [
 		[(1, 0), (2, 0), (0, 1), (1, 1)],
 		[(2, 1), (2, 2), (1, 0), (1, 1)],
@@ -415,13 +426,6 @@ mod rotate_map {
 		[(2, 0), (2, 1), (1, 1), (1, 2)],
 		[(2, 2), (1, 2), (1, 1), (0, 1)],
 		[(0, 2), (0, 1), (1, 1), (1, 0)],
-	];
-
-	pub const O: Map = [
-		[(1, 0), (2, 0), (1, 1), (2, 1)],
-		[(1, 0), (2, 0), (1, 1), (2, 1)],
-		[(1, 0), (2, 0), (1, 1), (2, 1)],
-		[(1, 0), (2, 0), (1, 1), (2, 1)],
 	];
 }
 
