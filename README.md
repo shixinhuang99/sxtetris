@@ -2,6 +2,8 @@
 
 A terminal Tetris game written in Rust, based on [ratatui](https://github.com/ratatui-org/ratatui) and [tokio](https://github.com/tokio-rs/tokio)
 
+https://github.com/shixinhuang99/sxtetris/assets/31186725/777f0608-30ad-41af-8bc6-bd63ecf32d9b
+
 ## Installation
 
 ### Cargo
