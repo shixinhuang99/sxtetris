@@ -3,7 +3,6 @@ use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 use crossterm::event::{
 	Event, EventStream, KeyCode, KeyEventKind, KeyModifiers,
 };
-use futures::StreamExt;
 use tokio::{
 	sync::{
 		broadcast,
@@ -154,6 +153,8 @@ impl SubHandler {
 }
 
 async fn term_task(tx: Sender) {
+	use futures_util::StreamExt;
+
 	let mut event_stream = EventStream::new();
 
 	while let Some(Ok(event)) = event_stream.next().await {
