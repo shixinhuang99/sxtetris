@@ -3,6 +3,8 @@ use super::TetrominoKind;
 pub struct Bag {
 	kinds: [TetrominoKind; 7],
 	cursor: usize,
+	last: Option<TetrominoKind>,
+	count: u8,
 }
 
 impl Bag {
@@ -18,6 +20,8 @@ impl Bag {
 				TetrominoKind::Z,
 			],
 			cursor: 0,
+			last: None,
+			count: 0,
 		};
 
 		bag.shuffle();
@@ -27,6 +31,12 @@ impl Bag {
 
 	fn shuffle(&mut self) {
 		fastrand::shuffle(self.kinds.as_mut_slice());
+		if self.last.is_some_and(|last| last == self.kinds[0]) && self.count < 3
+		{
+			self.shuffle();
+			self.count += 1;
+		}
+		self.count = 0;
 	}
 
 	pub fn next(&mut self) -> TetrominoKind {
@@ -36,6 +46,7 @@ impl Bag {
 		}
 		let tm_kind = self.kinds[self.cursor];
 		self.cursor += 1;
+		self.last = Some(tm_kind);
 
 		tm_kind
 	}
@@ -43,6 +54,8 @@ impl Bag {
 	pub fn reset(&mut self) {
 		self.shuffle();
 		self.cursor = 0;
+		self.last = None;
+		self.count = 0;
 	}
 
 	pub fn serialize(&self) -> String {
