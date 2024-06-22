@@ -1,6 +1,8 @@
+mod about;
 mod board;
 mod count_down;
 mod game_over_menu;
+mod help;
 mod list;
 mod pause_menu;
 mod scores;
@@ -8,9 +10,11 @@ mod sidebar;
 mod start_menu;
 mod utils;
 
+use about::about;
 use board::board;
 use count_down::count_down;
 use game_over_menu::game_over_menu;
+use help::help;
 use pause_menu::pause_menu;
 use ratatui::{
 	layout::{Constraint, Flex, Layout},
@@ -23,16 +27,14 @@ use sidebar::sidebar;
 use start_menu::start_menu;
 
 use crate::{
-	consts::{
-		BOARD_VISIBLE_Y_LEN, BOARD_X_LEN, MIN_CELL_HEIGHT, MIN_CELL_WIDTH,
-	},
+	consts::{BOARD_COLS, BOARD_VISIBLE_ROWS, MIN_CELL_HEIGHT, MIN_CELL_WIDTH},
 	handler::is_paused,
 	state::{Screen, State},
 };
 
-const MATRIX_Y_VISIBLE_LEN_U16: u16 = BOARD_VISIBLE_Y_LEN as u16;
+const MATRIX_Y_VISIBLE_LEN_U16: u16 = BOARD_VISIBLE_ROWS as u16;
 
-const MATRIX_X_LEN_U16: u16 = BOARD_X_LEN as u16;
+const MATRIX_X_LEN_U16: u16 = BOARD_COLS as u16;
 
 pub fn ui(f: &mut Frame, state: &State) {
 	let screen = f.size();
@@ -49,6 +51,10 @@ pub fn ui(f: &mut Frame, state: &State) {
 
 		if state.show_scores {
 			scores(f, state);
+		} else if state.show_help {
+			help(f);
+		} else if state.show_about {
+			about(f);
 		}
 
 		return;
@@ -92,6 +98,8 @@ pub fn ui(f: &mut Frame, state: &State) {
 
 	if state.show_scores {
 		scores(f, state);
+	} else if state.show_help {
+		help(f);
 	}
 }
 

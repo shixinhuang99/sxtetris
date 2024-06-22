@@ -226,6 +226,7 @@ async fn gravity_task(tx: Sender, mut sub_rx: SubReceiver) {
 						level = lv;
 						if level <= MAX_GRAVITY_LEVEL {
 							gravity_interval = interval(gravity_duration(level));
+							gravity_interval.reset();
 						}
 					}
 					_ => (),

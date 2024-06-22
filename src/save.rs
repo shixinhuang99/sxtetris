@@ -84,6 +84,7 @@ impl Save {
 		if !self.file.exists() {
 			fs::create_dir_all(&self.dir)?;
 			fs::write(&self.file, "")?;
+			return Ok(());
 		}
 
 		let content = fs::read_to_string(&self.file)?;
