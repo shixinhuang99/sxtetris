@@ -157,10 +157,14 @@ async fn term_task(tx: Sender) {
 
 	let mut event_stream = EventStream::new();
 
+	let space_throttle_ms = Duration::from_millis(200);
+	let mut space_instant = Instant::now();
+	let mut is_last_key_space = false;
+
 	while let Some(Ok(event)) = event_stream.next().await {
 		let game_event = match event {
 			Event::Key(key) if key.kind == KeyEventKind::Press => {
-				match key.code {
+				let e = match key.code {
 					KeyCode::Char('c')
 						if key.modifiers == KeyModifiers::CONTROL =>
 					{
@@ -171,12 +175,31 @@ async fn term_task(tx: Sender) {
 					KeyCode::Left | KeyCode::Char('j') => GameEvent::Left,
 					KeyCode::Right | KeyCode::Char('l') => GameEvent::Right,
 					KeyCode::Enter => GameEvent::Enter,
-					KeyCode::Char(' ') => GameEvent::Space,
+					KeyCode::Char(' ') => {
+						if is_last_key_space
+							&& Instant::now() - space_instant
+								< space_throttle_ms
+						{
+							space_instant = Instant::now();
+							continue;
+						}
+
+						GameEvent::Space
+					}
 					KeyCode::Esc => GameEvent::Esc,
 					KeyCode::Char('p') => GameEvent::P,
 					KeyCode::Char('z') => GameEvent::Z,
 					_ => continue,
+				};
+
+				if e == GameEvent::Space {
+					is_last_key_space = true;
+					space_instant = Instant::now();
+				} else {
+					is_last_key_space = false;
 				}
+
+				e
 			}
 			Event::FocusLost => GameEvent::FocusLost,
 			_ => continue,
