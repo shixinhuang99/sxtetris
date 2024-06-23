@@ -33,8 +33,8 @@ impl Bag {
 		fastrand::shuffle(self.kinds.as_mut_slice());
 		if self.last.is_some_and(|last| last == self.kinds[0]) && self.count < 3
 		{
-			self.shuffle();
 			self.count += 1;
+			return self.shuffle();
 		}
 		self.count = 0;
 	}
