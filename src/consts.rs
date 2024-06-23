@@ -1,5 +1,7 @@
 pub const APP_NAME: &str = env!("CARGO_PKG_NAME");
 
+pub const APP_VER: &str = env!("CARGO_PKG_VERSION");
+
 pub const BOARD_VISIBLE_ROWS: usize = 16;
 
 pub const BOARD_COLS: usize = 10;
