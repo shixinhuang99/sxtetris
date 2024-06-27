@@ -14,7 +14,15 @@ https://github.com/shixinhuang99/sxtetris/assets/31186725/c428f853-ac7f-45e4-bc7
 cargo install sxtetris --locked
 ```
 
-### Binrary releases
+### AUR
+
+You can install `sxtetris` from the [AUR](https://aur.archlinux.org/packages/sxtetris) with using an [AUR helper](https://wiki.archlinux.org/title/AUR_helpers).
+
+```sh
+paru -S sxtetris
+```
+
+### Binary releases
 
 Download the [latest release binary](https://github.com/shixinhuang99/sxtetris/releases)
 
