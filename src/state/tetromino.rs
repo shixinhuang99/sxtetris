@@ -160,38 +160,38 @@ impl Tetromino {
 	{
 		let mut points = self.points.clone();
 
-		let ret = match action {
+		let moved = match action {
 			TetrominoAction::SoftDrop => {
 				if points.is_touched_bottom() {
-					return None;
+					false
+				} else {
+					points.update(|p| p.1 += 1);
+					true
 				}
-				points.update(|p| p.1 += 1);
-				Some(points)
 			}
 			TetrominoAction::Left => {
 				if points.is_touched_left() {
-					return None;
+					false
+				} else {
+					points.update(|p| p.0 -= 1);
+					true
 				}
-				points.update(|p| p.0 -= 1);
-				Some(points)
 			}
 			TetrominoAction::Right => {
 				if points.is_touched_right() {
-					return None;
+					false
+				} else {
+					points.update(|p| p.0 += 1);
+					true
 				}
-				points.update(|p| p.0 += 1);
-				Some(points)
 			}
 			_ => unreachable!(),
 		};
 
-		if let Some(points) = ret {
-			if is_collision(&points) {
-				return None;
-			}
-			Some(points)
-		} else {
+		if !moved || is_collision(&points) {
 			None
+		} else {
+			Some(points)
 		}
 	}
 

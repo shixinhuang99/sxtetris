@@ -332,13 +332,7 @@ impl State {
 			return;
 		}
 
-		let old_level = self.level;
-
 		self.update_stats();
-
-		if self.level > old_level {
-			self.handler.change_level(self.level);
-		}
 
 		self.active_tm = Tetromino::new(self.preview_tm.kind);
 
@@ -482,11 +476,20 @@ impl State {
 	}
 
 	fn update_stats(&mut self) {
+		let previous_level = self.level;
+
 		let lines = self.board.check_and_clear_line();
 
 		if lines > 0 {
 			self.lines += lines;
-			self.level = self.lines / 10 + 1;
+
+			let new_level = self.lines / 10 + 1;
+
+			if new_level > previous_level {
+				self.level = new_level;
+				self.handler.change_level(self.level);
+			}
+
 			let base_score = match lines {
 				1 => 100,
 				2 => 300,

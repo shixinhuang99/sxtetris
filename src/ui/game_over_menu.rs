@@ -2,14 +2,13 @@ use ratatui::{
 	layout::{Constraint, Flex, Layout},
 	style::{Color, Style},
 	text::Line,
-	widgets::Clear,
 	Frame,
 };
 use tui_big_text::{BigText, PixelSize};
 
 use super::{
 	list::list,
-	utils::{centered_rect, rounded_block},
+	utils::{rounded_block, Popup},
 };
 use crate::state::State;
 
@@ -21,29 +20,18 @@ pub fn game_over_menu(f: &mut Frame, state: &State) {
 		(0, 0)
 	};
 
+	let popup = Popup::new(48 + width_offest, 26 + height_offest).render(f);
+
 	let mut constraints = vec![Constraint::Length(4), Constraint::Length(16)];
 
 	if new_score_idx.is_some() {
 		constraints.insert(1, Constraint::Length(6));
 	}
 
-	let area = centered_rect(
-		f.size(),
-		Constraint::Length(48 + width_offest),
-		Constraint::Length(26 + height_offest),
-	);
-
-	let block = rounded_block(None);
-	let block_inner = block.inner(area);
-
-	f.render_widget(Clear, area);
-
-	f.render_widget(block, area);
-
-	let chunk = Layout::vertical(constraints).spacing(3).split(block_inner);
+	let chunk = Layout::vertical(constraints).spacing(3).split(popup);
 
 	if let Some(idx) = new_score_idx {
-		let new_score_block = rounded_block(Some("new score"));
+		let new_score_block = rounded_block().title("NEW SCORE");
 		let new_score_block_inner = new_score_block.inner(chunk[1]);
 		let score = BigText::builder()
 			.pixel_size(PixelSize::Quadrant)

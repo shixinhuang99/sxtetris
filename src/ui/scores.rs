@@ -1,28 +1,17 @@
 use ratatui::{
-	layout::Constraint,
-	style::{Color, Style},
+	style::{Style, Stylize},
 	text::Line,
-	widgets::Clear,
 	Frame,
 };
 use tui_big_text::{BigText, PixelSize};
 
-use super::utils::{centered_rect, rounded_block};
+use super::utils::Popup;
 use crate::state::State;
 
 pub fn scores(f: &mut Frame, state: &State) {
-	let area =
-		centered_rect(f.size(), Constraint::Length(58), Constraint::Length(42));
+	let popup = Popup::new(58, 42).title("HIGH SCORES").render(f);
 
-	f.render_widget(Clear, area);
-
-	let block = rounded_block(Some("HIGH SCORES"));
-
-	let block_inner = block.inner(area);
-
-	f.render_widget(block, area);
-
-	let lines = state
+	let lines: Vec<Line> = state
 		.scores
 		.iter()
 		.enumerate()
@@ -34,14 +23,14 @@ pub fn scores(f: &mut Frame, state: &State) {
 			};
 			Line::raw(s)
 		})
-		.collect::<Vec<Line>>();
+		.collect();
 
 	let text = BigText::builder()
 		.pixel_size(PixelSize::Quadrant)
 		.lines(lines)
-		.style(Style::new().fg(Color::White))
+		.style(Style::new().white())
 		.build()
 		.unwrap();
 
-	f.render_widget(text, block_inner);
+	f.render_widget(text, popup);
 }

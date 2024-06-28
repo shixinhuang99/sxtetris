@@ -31,10 +31,6 @@ jobs:
       - name: Install Nightly
         run: cargo --version
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: ${{ runner.os }}
-
       - uses: taiki-e/install-action@v2
         with:
           tool: just,taplo-cli
@@ -62,10 +58,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: ${{ runner.os }}
 
       - name: Cargo Build
         run: |

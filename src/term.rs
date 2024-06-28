@@ -41,6 +41,7 @@ impl Term {
 
 		self.terminal.hide_cursor()?;
 		self.terminal.clear()?;
+
 		Ok(())
 	}
 
@@ -60,7 +61,7 @@ impl Term {
 
 fn reset() -> Result<()> {
 	disable_raw_mode()?;
-	crossterm::execute!(stderr(), LeaveAlternateScreen)?;
+	execute!(stderr(), LeaveAlternateScreen)?;
 
 	Ok(())
 }
