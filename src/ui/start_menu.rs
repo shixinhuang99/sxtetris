@@ -25,23 +25,12 @@ pub fn start_menu(f: &mut Frame, rect: Rect, list_state: &ListState) {
 	let title_area =
 		centered_rect(chunks[0], Constraint::Length(64), Constraint::Length(8));
 
-	let colors = [
-		Color::White,
-		Color::White,
-		Color::Red,
-		Color::Blue,
-		Color::Yellow,
-		Color::Green,
-		Color::Cyan,
-		Color::Magenta,
-	];
-
-	let spans = APP_NAME
+	let spans: Vec<Span> = APP_NAME
 		.to_uppercase()
 		.chars()
 		.enumerate()
-		.map(|(i, ch)| Span::styled(ch.to_string(), Style::new().fg(colors[i])))
-		.collect::<Vec<Span>>();
+		.map(|(i, ch)| Span::styled(ch.to_string(), Style::new().fg(COLORS[i])))
+		.collect();
 
 	let title = BigText::builder()
 		.pixel_size(PixelSize::Full)
@@ -53,3 +42,14 @@ pub fn start_menu(f: &mut Frame, rect: Rect, list_state: &ListState) {
 
 	list(f, chunks[1], list_state);
 }
+
+const COLORS: [Color; 8] = [
+	Color::White,
+	Color::White,
+	Color::Red,
+	Color::Blue,
+	Color::Yellow,
+	Color::Green,
+	Color::Cyan,
+	Color::Magenta,
+];

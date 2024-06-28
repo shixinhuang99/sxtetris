@@ -1,26 +1,19 @@
 use ratatui::{
-	layout::Constraint,
 	style::{Color, Style},
 	text::Line,
-	widgets::Clear,
+	widgets::block::Padding,
 	Frame,
 };
 use tui_big_text::{BigText, PixelSize};
 
-use super::utils::{centered_rect, rounded_block};
+use super::utils::Popup;
 use crate::state::State;
 
 pub fn count_down(f: &mut Frame, state: &State) {
-	let area =
-		centered_rect(f.size(), Constraint::Length(16), Constraint::Length(10));
-
-	f.render_widget(Clear, area);
-
-	let block = rounded_block(Some("PAUSED"));
-
-	let block_inner = block.inner(area);
-
-	f.render_widget(block, area);
+	let popup = Popup::new(16, 14)
+		.title("PAUSED")
+		.padding(Padding::new(4, 4, 2, 3))
+		.render(f);
 
 	let text = BigText::builder()
 		.pixel_size(PixelSize::Full)
@@ -29,11 +22,5 @@ pub fn count_down(f: &mut Frame, state: &State) {
 		.build()
 		.unwrap();
 
-	let center = centered_rect(
-		block_inner,
-		Constraint::Length(6),
-		Constraint::Length(7),
-	);
-
-	f.render_widget(text, center);
+	f.render_widget(text, popup);
 }

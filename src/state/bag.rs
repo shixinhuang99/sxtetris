@@ -30,8 +30,9 @@ impl Bag {
 	}
 
 	fn shuffle(&mut self) {
+		self.cursor = 0;
 		fastrand::shuffle(self.kinds.as_mut_slice());
-		if self.last.is_some_and(|last| last == self.kinds[0]) && self.count < 3
+		if self.last.is_some_and(|last| last == self.kinds[0]) && self.count < 1
 		{
 			self.count += 1;
 			return self.shuffle();
@@ -42,7 +43,6 @@ impl Bag {
 	pub fn next(&mut self) -> TetrominoKind {
 		if self.cursor >= self.kinds.len() {
 			self.shuffle();
-			self.cursor = 0;
 		}
 		let tm_kind = self.kinds[self.cursor];
 		self.cursor += 1;
@@ -53,9 +53,7 @@ impl Bag {
 
 	pub fn reset(&mut self) {
 		self.shuffle();
-		self.cursor = 0;
 		self.last = None;
-		self.count = 0;
 	}
 
 	pub fn serialize(&self) -> String {

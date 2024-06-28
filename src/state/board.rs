@@ -43,13 +43,13 @@ impl BoardState {
 		}
 	}
 
-	pub fn clear_area_if<F>(&mut self, tm: &Tetromino, should_update: F)
+	pub fn clear_area_if<F>(&mut self, tm: &Tetromino, should_clear: F)
 	where
 		F: Fn(&TetrominoKind) -> bool,
 	{
 		for p in tm.points.usize_points() {
 			let kind = &mut self.board[p.1][p.0];
-			if should_update(kind) {
+			if should_clear(kind) {
 				*kind = TetrominoKind::None;
 			}
 		}

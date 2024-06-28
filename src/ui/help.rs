@@ -1,24 +1,17 @@
 use ratatui::{
-	layout::Constraint,
 	style::{Style, Stylize},
 	text::{Line, Text},
-	widgets::{block::Padding, Clear, Paragraph},
+	widgets::{block::Padding, Paragraph},
 	Frame,
 };
 
-use super::utils::{centered_rect, rounded_block};
+use super::utils::Popup;
 
 pub fn help(f: &mut Frame) {
-	let area =
-		centered_rect(f.size(), Constraint::Length(36), Constraint::Length(13));
-
-	f.render_widget(Clear, area);
-
-	let block = rounded_block(Some("HELP")).padding(Padding::vertical(2));
-
-	let block_inner = block.inner(area);
-
-	f.render_widget(block, area);
+	let popup = Popup::new(36, 13)
+		.title("HELP")
+		.padding(Padding::vertical(2))
+		.render(f);
 
 	let lines: Vec<Line> = HELP_TEXT
 		.iter()
@@ -29,7 +22,7 @@ pub fn help(f: &mut Frame) {
 		.centered()
 		.style(Style::new().white().bold());
 
-	f.render_widget(p, block_inner);
+	f.render_widget(p, popup);
 }
 
 const HELP_TEXT: [[&str; 2]; 7] = [

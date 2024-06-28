@@ -1,22 +1,10 @@
-use ratatui::{layout::Constraint, widgets::Clear, Frame};
+use ratatui::Frame;
 
-use super::{
-	list::list,
-	utils::{centered_rect, rounded_block},
-};
+use super::{list::list, utils::Popup};
 use crate::state::ListState;
 
 pub fn pause_menu(f: &mut Frame, list_state: &ListState) {
-	let area =
-		centered_rect(f.size(), Constraint::Length(44), Constraint::Length(30));
+	let popup = Popup::new(44, 30).title("PAUSED").render(f);
 
-	let block = rounded_block(Some("PAUSED"));
-
-	let block_inner = block.inner(area);
-
-	f.render_widget(Clear, area);
-
-	f.render_widget(block, area);
-
-	list(f, block_inner, list_state);
+	list(f, popup, list_state);
 }

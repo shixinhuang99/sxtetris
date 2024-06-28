@@ -5,6 +5,7 @@ use ratatui::{
 	Frame,
 };
 use tui_big_text::{BigText, PixelSize};
+use Constraint::{Length, Ratio};
 
 use super::{board::board, utils::rounded_block};
 use crate::state::State;
@@ -16,18 +17,19 @@ pub fn sidebar(
 	cell_height: u16,
 	cell_width: u16,
 ) {
-	let sidebar_blcok = rounded_block(None);
+	let sidebar_blcok =
+		rounded_block().border_style(Style::new().fg(Color::DarkGray));
 
 	let sidebar_area = sidebar_blcok.inner(rect);
 
 	f.render_widget(sidebar_blcok, rect);
 
 	let vertical_chunks =
-		Layout::vertical([Constraint::Ratio(1, 4); 4]).areas::<4>(sidebar_area);
+		Layout::vertical([Ratio(1, 4); 4]).areas::<4>(sidebar_area);
 
 	let chunks_0 = Layout::vertical([
-		Constraint::Length(4),
-		Constraint::Length(cell_height * (state.preview_board.rows as u16) + 1),
+		Length(4),
+		Length(cell_height * (state.preview_board.rows as u16) + 1),
 	])
 	.spacing(1)
 	.flex(Flex::Center)
@@ -50,14 +52,14 @@ pub fn sidebar(
 }
 
 fn create_text_chunks(rect: Rect) -> [Rect; 2] {
-	Layout::vertical([Constraint::Length(4), Constraint::Length(4)])
+	Layout::vertical([Length(4); 2])
 		.spacing(1)
 		.flex(Flex::Center)
 		.areas::<2>(rect)
 }
 
 fn render_text(f: &mut Frame, text: String, rect: Rect, color: Color) {
-	let area = Layout::horizontal([Constraint::Length(text.len() as u16 * 4)])
+	let area = Layout::horizontal([Length(text.len() as u16 * 4)])
 		.flex(Flex::Center)
 		.areas::<1>(rect)[0];
 

@@ -32,9 +32,9 @@ use crate::{
 	state::{Screen, State},
 };
 
-const MATRIX_Y_VISIBLE_LEN_U16: u16 = BOARD_VISIBLE_ROWS as u16;
+const BOARD_VISIBLE_ROWS_U16: u16 = BOARD_VISIBLE_ROWS as u16;
 
-const MATRIX_X_LEN_U16: u16 = BOARD_COLS as u16;
+const BOARD_COLS_U16: u16 = BOARD_COLS as u16;
 
 pub fn ui(f: &mut Frame, state: &State) {
 	let screen = f.size();
@@ -63,7 +63,7 @@ pub fn ui(f: &mut Frame, state: &State) {
 	let (cell_height, cell_width) = calc_cell_size(screen.height);
 
 	let vertical_area = Layout::vertical([Constraint::Length(
-		cell_height * MATRIX_Y_VISIBLE_LEN_U16,
+		cell_height * BOARD_VISIBLE_ROWS_U16,
 	)])
 	.flex(Flex::Center)
 	.areas::<1>(screen)[0];
@@ -75,12 +75,12 @@ pub fn ui(f: &mut Frame, state: &State) {
 	.areas::<2>(vertical_area);
 
 	let left_area =
-		Layout::horizontal([Constraint::Length(cell_width * MATRIX_X_LEN_U16)])
+		Layout::horizontal([Constraint::Length(cell_width * BOARD_COLS_U16)])
 			.flex(Flex::End)
 			.areas::<1>(horizontal_area[0])[0];
 
 	let right_area =
-		Layout::horizontal([Constraint::Length(cell_width * MATRIX_X_LEN_U16)])
+		Layout::horizontal([Constraint::Length(cell_width * BOARD_COLS_U16)])
 			.flex(Flex::Start)
 			.areas::<1>(horizontal_area[1])[0];
 
@@ -104,7 +104,7 @@ pub fn ui(f: &mut Frame, state: &State) {
 }
 
 fn calc_cell_size(screen_height: u16) -> (u16, u16) {
-	let height = MIN_CELL_HEIGHT.max(screen_height / MATRIX_Y_VISIBLE_LEN_U16);
+	let height = MIN_CELL_HEIGHT.max(screen_height / BOARD_VISIBLE_ROWS_U16);
 	let width = MIN_CELL_WIDTH.max((height as f32 * 1.8) as u16);
 
 	(height, width)

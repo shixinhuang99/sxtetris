@@ -1,11 +1,10 @@
 use ratatui::{
 	layout::{Constraint, Layout, Rect},
-	style::{Color, Style},
+	style::{Color, Style, Stylize},
 	widgets::{Block, BorderType, Borders},
 	Frame,
 };
 
-use super::utils::rounded_block;
 use crate::state::{State, TetrominoKind};
 
 pub fn board(
@@ -28,45 +27,44 @@ pub fn board(
 		board.rows
 	};
 
-	let vertical_chunks =
+	let v_chunks =
 		Layout::vertical(vec![Constraint::Length(cell_height); rows])
 			.split(rect);
 
-	for (y, vertical_area) in vertical_chunks.iter().enumerate() {
-		let horinzontal_chunks =
-			Layout::horizontal(vec![
-				Constraint::Length(cell_width);
-				board.cols
-			])
-			.split(*vertical_area);
+	for (y, v_area) in v_chunks.iter().enumerate() {
+		let h_chunks = Layout::horizontal(vec![
+			Constraint::Length(cell_width);
+			board.cols
+		])
+		.split(*v_area);
 
-		for (x, horizontal_area) in horinzontal_chunks.iter().enumerate() {
-			let y_with_offest = if is_main_board {
-				y + rows
-			} else {
-				y
-			};
+		let y_with_offest = if is_main_board {
+			y + rows
+		} else {
+			y
+		};
 
+		for (x, h_area) in h_chunks.iter().enumerate() {
 			let tm_kind = board.get_cell(x, y_with_offest);
 
 			let piece_style = create_style(tm_kind);
 
 			let mut piece = if tm_kind.is_none_or_ghost() {
-				rounded_block(None).border_style(piece_style)
+				Block::bordered()
+					.border_type(BorderType::Rounded)
+					.border_style(piece_style)
 			} else {
-				let mut outer = Block::new()
-					.borders(Borders::ALL)
-					.border_type(BorderType::QuadrantInside);
+				let mut outer =
+					Block::bordered().border_type(BorderType::QuadrantInside);
 
-				let inner_area = outer.inner(*horizontal_area);
+				let inner_area = outer.inner(*h_area);
 				let mut inside = Block::new().style(create_style_bg(tm_kind));
 
 				if state.active_tm.points.contains(x, y_with_offest)
 					&& state.blinking
 				{
-					outer =
-						outer.border_style(Style::new().fg(Color::DarkGray));
-					inside = inside.style(Style::new().bg(Color::DarkGray));
+					outer = outer.dark_gray();
+					inside = inside.on_dark_gray();
 				} else {
 					outer = outer.border_style(piece_style);
 				}
@@ -80,7 +78,7 @@ pub fn board(
 				piece = piece.borders(Borders::NONE);
 			}
 
-			f.render_widget(piece, *horizontal_area);
+			f.render_widget(piece, *h_area);
 		}
 	}
 }
