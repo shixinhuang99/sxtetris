@@ -1,6 +1,6 @@
 use ratatui::{
 	layout::{Constraint, Layout, Rect},
-	style::{Color, Style, Stylize},
+	style::{Style, Stylize},
 	widgets::{Block, BorderType, Borders},
 	Frame,
 };
@@ -85,27 +85,27 @@ pub fn board(
 
 fn create_style(tm_kind: &TetrominoKind) -> Style {
 	match tm_kind {
-		TetrominoKind::I => Style::new().fg(Color::Cyan),
-		TetrominoKind::O => Style::new().fg(Color::LightYellow),
-		TetrominoKind::T => Style::new().fg(Color::Magenta),
-		TetrominoKind::L => Style::new().fg(Color::Yellow),
-		TetrominoKind::J => Style::new().fg(Color::Blue),
-		TetrominoKind::S => Style::new().fg(Color::Green),
-		TetrominoKind::Z => Style::new().fg(Color::Red),
-		TetrominoKind::None => Style::new().fg(Color::DarkGray),
-		TetrominoKind::Ghost => Style::new().fg(Color::Gray),
+		TetrominoKind::I => Style::new().cyan(),
+		TetrominoKind::O => Style::new().light_yellow(),
+		TetrominoKind::T => Style::new().magenta(),
+		TetrominoKind::L => Style::new().yellow(),
+		TetrominoKind::J => Style::new().blue(),
+		TetrominoKind::S => Style::new().green(),
+		TetrominoKind::Z => Style::new().red(),
+		TetrominoKind::None => Style::new().dark_gray(),
+		TetrominoKind::Ghost => Style::new().gray(),
 	}
 }
 
 fn create_style_bg(tm_kind: &TetrominoKind) -> Style {
 	match tm_kind {
-		TetrominoKind::I => Style::new().bg(Color::Cyan),
-		TetrominoKind::O => Style::new().bg(Color::LightYellow),
-		TetrominoKind::T => Style::new().bg(Color::Magenta),
-		TetrominoKind::L => Style::new().bg(Color::Yellow),
-		TetrominoKind::J => Style::new().bg(Color::Blue),
-		TetrominoKind::S => Style::new().bg(Color::Green),
-		TetrominoKind::Z => Style::new().bg(Color::Red),
+		TetrominoKind::I => Style::new().on_cyan(),
+		TetrominoKind::O => Style::new().on_light_yellow(),
+		TetrominoKind::T => Style::new().on_magenta(),
+		TetrominoKind::L => Style::new().on_yellow(),
+		TetrominoKind::J => Style::new().on_blue(),
+		TetrominoKind::S => Style::new().on_green(),
+		TetrominoKind::Z => Style::new().on_red(),
 		_ => unreachable!(),
 	}
 }
