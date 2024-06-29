@@ -1,23 +1,23 @@
-use super::TetrominoKind;
+use super::TetrominoType;
 
 pub struct Bag {
-	kinds: [TetrominoKind; 7],
+	tm_types: [TetrominoType; 7],
 	cursor: usize,
-	last: Option<TetrominoKind>,
+	last: Option<TetrominoType>,
 	count: u8,
 }
 
 impl Bag {
 	pub fn new() -> Self {
 		let mut bag = Self {
-			kinds: [
-				TetrominoKind::I,
-				TetrominoKind::J,
-				TetrominoKind::L,
-				TetrominoKind::O,
-				TetrominoKind::S,
-				TetrominoKind::T,
-				TetrominoKind::Z,
+			tm_types: [
+				TetrominoType::I,
+				TetrominoType::J,
+				TetrominoType::L,
+				TetrominoType::O,
+				TetrominoType::S,
+				TetrominoType::T,
+				TetrominoType::Z,
 			],
 			cursor: 0,
 			last: None,
@@ -31,8 +31,9 @@ impl Bag {
 
 	fn shuffle(&mut self) {
 		self.cursor = 0;
-		fastrand::shuffle(self.kinds.as_mut_slice());
-		if self.last.is_some_and(|last| last == self.kinds[0]) && self.count < 1
+		fastrand::shuffle(self.tm_types.as_mut_slice());
+		if self.last.is_some_and(|last| last == self.tm_types[0])
+			&& self.count < 1
 		{
 			self.count += 1;
 			return self.shuffle();
@@ -40,15 +41,15 @@ impl Bag {
 		self.count = 0;
 	}
 
-	pub fn next(&mut self) -> TetrominoKind {
-		if self.cursor >= self.kinds.len() {
+	pub fn next(&mut self) -> TetrominoType {
+		if self.cursor >= self.tm_types.len() {
 			self.shuffle();
 		}
-		let tm_kind = self.kinds[self.cursor];
+		let tm_type = self.tm_types[self.cursor];
 		self.cursor += 1;
-		self.last = Some(tm_kind);
+		self.last = Some(tm_type);
 
-		tm_kind
+		tm_type
 	}
 
 	pub fn reset(&mut self) {
@@ -59,8 +60,8 @@ impl Bag {
 	pub fn serialize(&self) -> String {
 		let mut content = String::from("#bag\n");
 
-		for kind in &self.kinds {
-			content.push(char::from(*kind));
+		for tm_type in &self.tm_types {
+			content.push(char::from(*tm_type));
 		}
 
 		content.push_str(&format!(" {}\n", self.cursor));
@@ -76,7 +77,7 @@ impl Bag {
 		}
 
 		for (i, ch) in chunks[0].chars().enumerate() {
-			self.kinds[i] = TetrominoKind::from(ch);
+			self.tm_types[i] = TetrominoType::from(ch);
 		}
 
 		self.cursor = chunks[1].parse::<usize>().unwrap();

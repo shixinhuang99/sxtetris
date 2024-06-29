@@ -4,6 +4,7 @@ mod consts;
 mod list;
 mod point;
 mod tetromino;
+mod tetromino_type;
 
 use bag::Bag;
 pub use board::BoardState;
@@ -13,8 +14,8 @@ use consts::{
 };
 pub use list::ListState;
 use point::Points;
-pub use tetromino::TetrominoKind;
 use tetromino::{Tetromino, TetrominoAction};
+pub use tetromino_type::TetrominoType;
 
 use crate::{
 	animation::confetti::{ConfettiDirection, ConfettiState},
@@ -73,9 +74,9 @@ impl State {
 				PREVIEW_BOARD_COLS,
 			),
 			bag: Bag::new(),
-			active_tm: Tetromino::new(TetrominoKind::None),
-			preview_tm: Tetromino::new_preview(TetrominoKind::None),
-			ghost_tm: Tetromino::new(TetrominoKind::Ghost),
+			active_tm: Tetromino::new(TetrominoType::None),
+			preview_tm: Tetromino::new_preview(TetrominoType::None),
+			ghost_tm: Tetromino::new(TetrominoType::Ghost),
 			level: 1,
 			score: 0,
 			lines: 0,
@@ -339,7 +340,7 @@ impl State {
 			return;
 		}
 
-		self.active_tm = Tetromino::new(self.preview_tm.kind);
+		self.active_tm = Tetromino::new(self.preview_tm.tm_type);
 
 		if self.board.is_collision(&self.active_tm.points) {
 			self.game_over();
@@ -461,11 +462,11 @@ impl State {
 				}
 			}
 
-			self.board.clear_area_if(&self.ghost_tm, |kind| {
-				*kind == TetrominoKind::Ghost
+			self.board.clear_area_if(&self.ghost_tm, |tm_type| {
+				*tm_type == TetrominoType::Ghost
 			});
 			self.ghost_tm = virtual_tm;
-			self.ghost_tm.kind = TetrominoKind::Ghost;
+			self.ghost_tm.tm_type = TetrominoType::Ghost;
 			self.board.update_area(&self.ghost_tm);
 		}
 	}

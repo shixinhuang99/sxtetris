@@ -1,5 +1,6 @@
 mod animation;
 mod app;
+mod color;
 mod consts;
 mod handler;
 mod save;

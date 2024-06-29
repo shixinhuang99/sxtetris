@@ -5,6 +5,7 @@ mod game_over_menu;
 mod help;
 mod list;
 mod pause_menu;
+mod preview_board;
 mod scores;
 mod sidebar;
 mod start_menu;
@@ -85,7 +86,7 @@ pub fn ui(f: &mut Frame, state: &mut State) {
 			.flex(Flex::Start)
 			.areas::<1>(horizontal_area[1])[0];
 
-	board(f, left_area, state, cell_height, cell_width, true);
+	board(f, left_area, state, cell_height, cell_width);
 
 	let confetti = Confetti;
 	f.render_stateful_widget(confetti, f.size(), &mut state.confetti_state);
