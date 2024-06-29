@@ -5,7 +5,10 @@ use ratatui::{
 	Frame,
 };
 
-use crate::{consts::BOARD_VISIBLE_ROWS, state::State};
+use crate::{
+	consts::BOARD_VISIBLE_ROWS,
+	state::{State, TetrominoType},
+};
 
 pub fn board(
 	f: &mut Frame,
@@ -19,6 +22,8 @@ pub fn board(
 		BOARD_VISIBLE_ROWS
 	])
 	.split(rect);
+
+	let ghost_style = get_ghost_style(&state.active_tm.tm_type);
 
 	for (y, v_area) in v_chunks.iter().enumerate() {
 		let h_chunks = Layout::horizontal(vec![
@@ -44,7 +49,17 @@ pub fn board(
 			let tm_color = tm_type.color();
 			let piece_style = Style::new().fg(tm_color);
 
-			if tm_type.is_none_or_ghost() {
+			if *tm_type == TetrominoType::Ghost {
+				f.render_widget(
+					Block::bordered()
+						.border_type(BorderType::Rounded)
+						.border_style(ghost_style),
+					*h_area,
+				);
+				continue;
+			}
+
+			if *tm_type == TetrominoType::None {
 				f.render_widget(
 					Block::bordered()
 						.border_type(BorderType::Rounded)
@@ -72,5 +87,20 @@ pub fn board(
 			f.render_widget(inside_block, inner_area);
 			f.render_widget(outer_block, *h_area);
 		}
+	}
+}
+
+fn get_ghost_style(tm_type: &TetrominoType) -> Style {
+	use ratatui::style::Stylize;
+
+	match tm_type {
+		TetrominoType::I => Style::new().cyan(),
+		TetrominoType::O => Style::new().light_yellow(),
+		TetrominoType::T => Style::new().magenta(),
+		TetrominoType::L => Style::new().yellow(),
+		TetrominoType::J => Style::new().light_blue(),
+		TetrominoType::S => Style::new().green(),
+		TetrominoType::Z => Style::new().light_red(),
+		_ => unreachable!(),
 	}
 }

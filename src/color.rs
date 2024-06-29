@@ -15,6 +15,7 @@ pub const fn yellow() -> Color {
 pub const fn green() -> Color {
 	Color::Rgb(0, 255, 0)
 }
+
 pub const fn cyan() -> Color {
 	Color::Rgb(0, 255, 255)
 }
