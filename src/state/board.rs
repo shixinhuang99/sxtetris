@@ -77,7 +77,7 @@ impl BoardState {
 			.any(|p| !self.board[p.1][p.0].is_none_or_ghost())
 	}
 
-	pub fn check_and_clear_line(&mut self) -> u32 {
+	pub fn clear_line(&mut self) -> u32 {
 		let mut cnt = 0;
 
 		self.board.retain(|line| {

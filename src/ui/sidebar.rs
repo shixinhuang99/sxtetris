@@ -13,7 +13,7 @@ use crate::state::State;
 pub fn sidebar(
 	f: &mut Frame,
 	rect: Rect,
-	state: &State,
+	state: &mut State,
 	cell_height: u16,
 	cell_width: u16,
 ) {

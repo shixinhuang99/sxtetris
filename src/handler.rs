@@ -11,6 +11,8 @@ use tokio::{
 	time::{interval, sleep, Duration, Instant, Interval},
 };
 
+use crate::consts::FRAME_RATE_SECS;
+
 type Sender = UnboundedSender<GameEvent>;
 type Receiver = UnboundedReceiver<GameEvent>;
 type SubSender = broadcast::Sender<SubEvent>;
@@ -155,7 +157,7 @@ impl SubHandler {
 }
 
 async fn tick_task(tx: Sender) {
-	let mut tick_interval = interval(Duration::from_millis(33));
+	let mut tick_interval = interval(Duration::from_secs_f32(FRAME_RATE_SECS));
 
 	loop {
 		tick_interval.tick().await;

@@ -10,7 +10,7 @@ use crate::state::{State, TetrominoKind};
 pub fn board(
 	f: &mut Frame,
 	rect: Rect,
-	state: &State,
+	state: &mut State,
 	cell_height: u16,
 	cell_width: u16,
 	is_main_board: bool,
@@ -79,6 +79,15 @@ pub fn board(
 			}
 
 			f.render_widget(piece, *h_area);
+
+			let dirs = state.confetti_state.get_point_dirs(x, y_with_offest);
+			state.confetti_state.spawn_particles(
+				h_area.x,
+				h_area.y,
+				h_area.width,
+				h_area.height,
+				dirs,
+			);
 		}
 	}
 }

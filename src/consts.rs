@@ -16,3 +16,5 @@ pub const PREVIEW_BOARD_COLS: usize = 8;
 pub const MIN_CELL_WIDTH: u16 = 5;
 
 pub const MIN_CELL_HEIGHT: u16 = 3;
+
+pub const FRAME_RATE_SECS: f32 = 0.033;

@@ -44,8 +44,9 @@ impl App {
 			}
 
 			if event == GameEvent::Tick {
+				self.state.confetti_state.move_particles();
 				self.term.draw(|f| {
-					ui(f, &self.state);
+					ui(f, &mut self.state);
 				})?;
 				continue;
 			}

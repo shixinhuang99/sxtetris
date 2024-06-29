@@ -27,6 +27,7 @@ use sidebar::sidebar;
 use start_menu::start_menu;
 
 use crate::{
+	animation::confetti::Confetti,
 	consts::{BOARD_COLS, BOARD_VISIBLE_ROWS, MIN_CELL_HEIGHT, MIN_CELL_WIDTH},
 	handler::is_paused,
 	state::{Screen, State},
@@ -36,7 +37,7 @@ const BOARD_VISIBLE_ROWS_U16: u16 = BOARD_VISIBLE_ROWS as u16;
 
 const BOARD_COLS_U16: u16 = BOARD_COLS as u16;
 
-pub fn ui(f: &mut Frame, state: &State) {
+pub fn ui(f: &mut Frame, state: &mut State) {
 	let screen = f.size();
 
 	let bg_block = Block::new()
@@ -85,6 +86,9 @@ pub fn ui(f: &mut Frame, state: &State) {
 			.areas::<1>(horizontal_area[1])[0];
 
 	board(f, left_area, state, cell_height, cell_width, true);
+
+	let confetti = Confetti;
+	f.render_stateful_widget(confetti, f.size(), &mut state.confetti_state);
 
 	sidebar(f, right_area, state, cell_height, cell_width);
 

@@ -62,4 +62,8 @@ impl Points {
 			.iter()
 			.any(|p| p.1 as usize == y && p.0 as usize == x)
 	}
+
+	pub fn bottom_point(&self) -> Option<&Point> {
+		self.value.iter().max_by(|a, b| a.1.cmp(&b.1))
+	}
 }

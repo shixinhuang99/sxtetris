@@ -17,6 +17,7 @@ pub use tetromino::TetrominoKind;
 use tetromino::{Tetromino, TetrominoAction};
 
 use crate::{
+	animation::confetti::{ConfettiDirection, ConfettiState},
 	consts::{BOARD_COLS, BOARD_ROWS, PREVIEW_BOARD_COLS, PREVIEW_BOARD_ROWS},
 	handler::{is_locked, is_paused, GameEvent, SubHandler},
 	save::Save,
@@ -54,6 +55,7 @@ pub struct State {
 	pub blinking: bool,
 	pub show_help: bool,
 	pub show_about: bool,
+	pub confetti_state: ConfettiState,
 }
 
 impl State {
@@ -85,6 +87,7 @@ impl State {
 			blinking: false,
 			show_help: false,
 			show_about: false,
+			confetti_state: ConfettiState::new(),
 		}
 	}
 
@@ -305,6 +308,7 @@ impl State {
 		self.is_game_over = false;
 		self.blinking = false;
 		self.screen = Screen::Game;
+		self.confetti_state.reset();
 
 		self.active_tm = Tetromino::new(self.bag.next());
 		self.update_ghost_tm();
@@ -327,17 +331,20 @@ impl State {
 	}
 
 	fn gen_next_tm(&mut self) {
+		self.push_tm_points_to_confetti();
+		self.update_stats();
+
 		if self.active_tm.points.is_out_of_visible_arae() {
 			self.game_over();
 			return;
 		}
 
-		self.update_stats();
-
 		self.active_tm = Tetromino::new(self.preview_tm.kind);
 
 		if self.board.is_collision(&self.active_tm.points) {
 			self.game_over();
+			self.blinking = false;
+			self.board.update_area(&self.active_tm);
 			return;
 		}
 
@@ -438,14 +445,7 @@ impl State {
 
 	// must call before update active tetromino area
 	fn update_ghost_tm(&mut self) {
-		let bottom_point = self
-			.active_tm
-			.points
-			.value
-			.iter()
-			.max_by(|a, b| a.1.cmp(&b.1));
-
-		if let Some(point) = bottom_point {
+		if let Some(point) = self.active_tm.points.bottom_point() {
 			let mut virtual_tm = self.active_tm.clone();
 			let mut distance = BOARD_ROWS_I32 - point.1 - 1;
 
@@ -478,7 +478,7 @@ impl State {
 	fn update_stats(&mut self) {
 		let previous_level = self.level;
 
-		let lines = self.board.check_and_clear_line();
+		let lines = self.board.clear_line();
 
 		if lines > 0 {
 			self.lines += lines;
@@ -519,6 +519,64 @@ impl State {
 			self.score = last_game.score;
 			self.lines = last_game.lines;
 			self.combo = last_game.combo;
+		}
+	}
+
+	pub fn push_tm_points_to_confetti(&mut self) {
+		use ConfettiDirection::*;
+
+		const DIRS: [ConfettiDirection; 4] = [Top, Right, Bottom, Left];
+		let points = self.active_tm.points.usize_points();
+
+		for p in points.iter() {
+			for dir in DIRS {
+				match dir {
+					Top => {
+						if p.1 == 0 {
+							continue;
+						}
+						let y = p.1 - 1;
+						if points.contains(&(p.0, y))
+							|| self.board.get_cell(p.0, y).is_none_or_ghost()
+						{
+							continue;
+						}
+						self.confetti_state.push_tm_point(p.0, p.1, dir);
+					}
+					Right => {
+						let x = p.0 + 1;
+						if x >= self.board.cols
+							|| points.contains(&(x, p.1))
+							|| self.board.get_cell(x, p.1).is_none_or_ghost()
+						{
+							continue;
+						}
+						self.confetti_state.push_tm_point(p.0, p.1, dir);
+					}
+					Bottom => {
+						let y = p.1 + 1;
+						if y >= self.board.rows
+							|| points.contains(&(p.0, y))
+							|| self.board.get_cell(p.0, y).is_none_or_ghost()
+						{
+							continue;
+						}
+						self.confetti_state.push_tm_point(p.0, p.1, dir);
+					}
+					Left => {
+						if p.0 == 0 {
+							continue;
+						}
+						let x = p.0 - 1;
+						if points.contains(&(x, p.1))
+							|| self.board.get_cell(x, p.1).is_none_or_ghost()
+						{
+							continue;
+						}
+						self.confetti_state.push_tm_point(p.0, p.1, dir);
+					}
+				}
+			}
 		}
 	}
 }
