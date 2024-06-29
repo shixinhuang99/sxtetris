@@ -20,6 +20,7 @@ const MAX_GRAVITY_LEVEL: u32 = 15;
 
 #[derive(PartialEq)]
 pub enum GameEvent {
+	Tick,
 	FocusLost,
 	CtrlC,
 	Up,
@@ -69,6 +70,7 @@ impl MainHandler {
 	pub fn new() -> Self {
 		let (tx, rx) = unbounded_channel();
 
+		tokio::spawn(tick_task(tx.clone()));
 		tokio::spawn(term_task(tx.clone()));
 
 		Self {
@@ -149,6 +151,15 @@ impl SubHandler {
 	pub fn cancel_pause(&mut self) {
 		PAUSED.store(false, Relaxed);
 		self.send(SubEvent::PauseCancel);
+	}
+}
+
+async fn tick_task(tx: Sender) {
+	let mut tick_interval = interval(Duration::from_millis(33));
+
+	loop {
+		tick_interval.tick().await;
+		tx.send(GameEvent::Tick).unwrap();
 	}
 }
 

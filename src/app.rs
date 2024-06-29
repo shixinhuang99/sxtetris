@@ -38,20 +38,19 @@ impl App {
 	pub async fn run(&mut self) -> Result<()> {
 		self.term.init()?;
 
-		self.term.draw(|f| {
-			ui(f, &self.state);
-		})?;
-
 		while let Some(event) = self.handler.recv().await {
 			if event == GameEvent::CtrlC {
 				break;
 			}
 
-			self.state.receive_event(event);
+			if event == GameEvent::Tick {
+				self.term.draw(|f| {
+					ui(f, &self.state);
+				})?;
+				continue;
+			}
 
-			self.term.draw(|f| {
-				ui(f, &self.state);
-			})?;
+			self.state.receive_event(event);
 
 			if !self.state.running {
 				break;
