@@ -5,7 +5,7 @@ use ratatui::{
 	buffer::Buffer, layout::Rect, style::Color, widgets::StatefulWidget,
 };
 
-use crate::{color, consts::FRAME_RATE_SECS};
+use crate::consts::FRAME_RATE_SECS;
 
 struct Particle {
 	char: char,
@@ -53,14 +53,13 @@ fn random_character() -> char {
 }
 
 fn random_color() -> Color {
-	const COLORS: [Color; 7] = [
-		color::red(),
-		color::orange(),
-		color::yellow(),
-		color::green(),
-		color::cyan(),
-		color::blue(),
-		color::purple(),
+	const COLORS: [Color; 6] = [
+		Color::LightBlue,
+		Color::LightCyan,
+		Color::LightGreen,
+		Color::LightMagenta,
+		Color::LightRed,
+		Color::LightYellow,
 	];
 	fastrand::choice(COLORS).unwrap_or(COLORS[0])
 }
