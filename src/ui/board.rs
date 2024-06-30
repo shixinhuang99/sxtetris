@@ -90,6 +90,7 @@ pub fn board(
 	}
 }
 
+// The borders get bigger when using RGB colors, so here we use ANSI colors
 fn get_ghost_style(tm_type: &TetrominoType) -> Style {
 	use ratatui::style::Stylize;
 

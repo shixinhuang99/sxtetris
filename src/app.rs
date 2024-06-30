@@ -45,6 +45,7 @@ impl App {
 
 			if event == GameEvent::Tick {
 				self.state.confetti_state.move_particles();
+				self.state.update_clear_rows_progress();
 				self.term.draw(|f| {
 					ui(f, &mut self.state);
 				})?;

@@ -2,11 +2,20 @@ use std::collections::VecDeque;
 
 use super::{point::Points, Tetromino, TetrominoType};
 
-#[derive(Clone)]
 pub struct BoardState {
 	pub board: VecDeque<Vec<TetrominoType>>,
 	pub rows: usize,
 	pub cols: usize,
+	cleared_rows: Vec<usize>,
+	col_cursor: usize,
+	pub status: BoardStatus,
+}
+
+#[derive(PartialEq)]
+pub enum BoardStatus {
+	None,
+	Pending,
+	Done,
 }
 
 impl BoardState {
@@ -17,6 +26,9 @@ impl BoardState {
 			board,
 			rows,
 			cols,
+			cleared_rows: Vec::new(),
+			col_cursor: 0,
+			status: BoardStatus::None,
 		}
 	}
 
@@ -25,6 +37,9 @@ impl BoardState {
 			vec![TetrominoType::None; self.cols];
 			self.rows
 		]);
+		self.cleared_rows.clear();
+		self.col_cursor = 0;
+		self.status = BoardStatus::None;
 	}
 
 	pub fn get_cell(&self, x: usize, y: usize) -> &TetrominoType {
@@ -77,22 +92,54 @@ impl BoardState {
 			.any(|p| !self.board[p.1][p.0].is_none_or_ghost())
 	}
 
-	pub fn clear_line(&mut self) -> u32 {
-		let mut cnt = 0;
-
-		self.board.retain(|line| {
-			if line.iter().any(|tm_type| tm_type.is_none_or_ghost()) {
-				return true;
+	pub fn check_need_cleared_rows(&mut self) -> usize {
+		for (i, row) in self.board.iter().enumerate() {
+			if row.iter().any(|tm_type| tm_type.is_none_or_ghost()) {
+				continue;
 			}
-			cnt += 1;
-			false
-		});
+			self.cleared_rows.push(i);
+		}
+		if !self.cleared_rows.is_empty() {
+			self.status = BoardStatus::Pending;
+		}
+		self.cleared_rows.len()
+	}
 
-		for _ in 0..cnt {
+	fn clear_col(&mut self) {
+		for (y, row) in self.board.iter_mut().enumerate() {
+			if !self.cleared_rows.contains(&y) {
+				continue;
+			}
+			for (x, cell) in row.iter_mut().enumerate() {
+				if x == self.col_cursor {
+					*cell = TetrominoType::None;
+				}
+			}
+		}
+	}
+
+	fn push_new_rows(&mut self) {
+		for row in &self.cleared_rows {
+			self.board.remove(*row);
 			self.board.push_front(vec![TetrominoType::None; self.cols]);
 		}
+		self.cleared_rows.clear();
+	}
 
-		cnt
+	pub fn update_clear_rows_progress(&mut self) {
+		if self.status != BoardStatus::Pending {
+			return;
+		}
+		self.clear_col();
+		if self.col_cursor >= self.cols {
+			self.col_cursor = 0;
+			self.status = BoardStatus::Done;
+		} else {
+			self.col_cursor += 1;
+		}
+		if self.status == BoardStatus::Done {
+			self.push_new_rows();
+		}
 	}
 
 	pub fn serialize(&self) -> String {

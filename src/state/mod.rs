@@ -7,7 +7,7 @@ mod tetromino;
 mod tetromino_type;
 
 use bag::Bag;
-pub use board::BoardState;
+use board::{BoardState, BoardStatus};
 use consts::{
 	game_over_menu_idx, pause_menu_idx, start_menu_idx, GAME_OVER_MENU_ITEMS,
 	PAUSE_MENU_ITEMS, START_MENU_ITEMS,
@@ -93,6 +93,9 @@ impl State {
 	}
 
 	pub fn receive_event(&mut self, event: GameEvent) {
+		if self.board.status == BoardStatus::Pending {
+			return;
+		}
 		if let GameEvent::CountDown(v) = event {
 			self.count_down = v;
 			if self.count_down == 0 {
@@ -148,7 +151,7 @@ impl State {
 				self.move_tm(TetrominoAction::SoftDrop);
 			}
 			GameEvent::LockEnd => {
-				self.gen_next_tm();
+				self.pre_gen_next_tm();
 			}
 			GameEvent::Blink => {
 				self.blinking = !self.blinking;
@@ -331,15 +334,26 @@ impl State {
 		self.scores.truncate(10);
 	}
 
-	fn gen_next_tm(&mut self) {
+	fn pre_gen_next_tm(&mut self) {
 		self.push_tm_points_to_confetti();
-		self.update_stats();
+
+		let cleard_rows_len = self.board.check_need_cleared_rows();
+
+		self.update_stats(cleard_rows_len);
+
+		if cleard_rows_len > 0 {
+			return;
+		}
 
 		if self.active_tm.points.is_out_of_visible_arae() {
 			self.game_over();
 			return;
 		}
 
+		self.gen_next_tm();
+	}
+
+	fn gen_next_tm(&mut self) {
 		self.active_tm = Tetromino::new(self.preview_tm.tm_type);
 
 		if self.board.is_collision(&self.active_tm.points) {
@@ -391,7 +405,7 @@ impl State {
 			if tm_action == TetrominoAction::HardDrop {
 				self.score += distance as u32 * 2;
 				self.handler.cancel_lock();
-				self.gen_next_tm();
+				self.pre_gen_next_tm();
 				return;
 			}
 
@@ -476,13 +490,11 @@ impl State {
 			.is_collision_with_ignore(points, &self.active_tm.points)
 	}
 
-	fn update_stats(&mut self) {
+	fn update_stats(&mut self, rows_len: usize) {
 		let previous_level = self.level;
 
-		let lines = self.board.clear_line();
-
-		if lines > 0 {
-			self.lines += lines;
+		if rows_len > 0 {
+			self.lines += rows_len as u32;
 
 			let new_level = self.lines / 10 + 1;
 
@@ -491,7 +503,7 @@ impl State {
 				self.handler.change_level(self.level);
 			}
 
-			let base_score = match lines {
+			let base_score = match rows_len {
 				1 => 100,
 				2 => 300,
 				3 => 500,
@@ -578,6 +590,14 @@ impl State {
 					}
 				}
 			}
+		}
+	}
+
+	pub fn update_clear_rows_progress(&mut self) {
+		self.board.update_clear_rows_progress();
+		if self.board.status == BoardStatus::Done {
+			self.board.status = BoardStatus::None;
+			self.gen_next_tm();
 		}
 	}
 }
