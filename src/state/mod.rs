@@ -1,20 +1,23 @@
 mod bag;
 mod board;
+mod confetti;
 mod consts;
 mod list;
 mod point;
 mod tetromino;
+mod tetromino_type;
 
 use bag::Bag;
-pub use board::BoardState;
+use board::{BoardState, BoardStatus};
+pub use confetti::ConfettiState;
 use consts::{
 	game_over_menu_idx, pause_menu_idx, start_menu_idx, GAME_OVER_MENU_ITEMS,
 	PAUSE_MENU_ITEMS, START_MENU_ITEMS,
 };
 pub use list::ListState;
 use point::Points;
-pub use tetromino::TetrominoKind;
 use tetromino::{Tetromino, TetrominoAction};
+pub use tetromino_type::TetrominoType;
 
 use crate::{
 	consts::{BOARD_COLS, BOARD_ROWS, PREVIEW_BOARD_COLS, PREVIEW_BOARD_ROWS},
@@ -71,9 +74,9 @@ impl State {
 				PREVIEW_BOARD_COLS,
 			),
 			bag: Bag::new(),
-			active_tm: Tetromino::new(TetrominoKind::None),
-			preview_tm: Tetromino::new_preview(TetrominoKind::None),
-			ghost_tm: Tetromino::new(TetrominoKind::Ghost),
+			active_tm: Tetromino::new(TetrominoType::None),
+			preview_tm: Tetromino::new_preview(TetrominoType::None),
+			ghost_tm: Tetromino::new(TetrominoType::Ghost),
 			level: 1,
 			score: 0,
 			lines: 0,
@@ -89,6 +92,9 @@ impl State {
 	}
 
 	pub fn receive_event(&mut self, event: GameEvent) {
+		if self.board.status == BoardStatus::Pending {
+			return;
+		}
 		if let GameEvent::CountDown(v) = event {
 			self.count_down = v;
 			if self.count_down == 0 {
@@ -144,7 +150,7 @@ impl State {
 				self.move_tm(TetrominoAction::SoftDrop);
 			}
 			GameEvent::LockEnd => {
-				self.gen_next_tm();
+				self.pre_gen_next_tm();
 			}
 			GameEvent::Blink => {
 				self.blinking = !self.blinking;
@@ -326,18 +332,30 @@ impl State {
 		self.scores.truncate(10);
 	}
 
-	fn gen_next_tm(&mut self) {
+	fn pre_gen_next_tm(&mut self) {
+		let cleard_rows_len = self.board.check_need_cleared_rows();
+
+		self.update_stats(cleard_rows_len);
+
+		if cleard_rows_len > 0 {
+			return;
+		}
+
 		if self.active_tm.points.is_out_of_visible_arae() {
 			self.game_over();
 			return;
 		}
 
-		self.update_stats();
+		self.gen_next_tm();
+	}
 
-		self.active_tm = Tetromino::new(self.preview_tm.kind);
+	fn gen_next_tm(&mut self) {
+		self.active_tm = Tetromino::new(self.preview_tm.tm_type);
 
 		if self.board.is_collision(&self.active_tm.points) {
 			self.game_over();
+			self.blinking = false;
+			self.board.update_area(&self.active_tm);
 			return;
 		}
 
@@ -383,7 +401,7 @@ impl State {
 			if tm_action == TetrominoAction::HardDrop {
 				self.score += distance as u32 * 2;
 				self.handler.cancel_lock();
-				self.gen_next_tm();
+				self.pre_gen_next_tm();
 				return;
 			}
 
@@ -438,14 +456,7 @@ impl State {
 
 	// must call before update active tetromino area
 	fn update_ghost_tm(&mut self) {
-		let bottom_point = self
-			.active_tm
-			.points
-			.value
-			.iter()
-			.max_by(|a, b| a.1.cmp(&b.1));
-
-		if let Some(point) = bottom_point {
+		if let Some(point) = self.active_tm.points.bottom_point() {
 			let mut virtual_tm = self.active_tm.clone();
 			let mut distance = BOARD_ROWS_I32 - point.1 - 1;
 
@@ -461,11 +472,11 @@ impl State {
 				}
 			}
 
-			self.board.clear_area_if(&self.ghost_tm, |kind| {
-				*kind == TetrominoKind::Ghost
+			self.board.clear_area_if(&self.ghost_tm, |tm_type| {
+				*tm_type == TetrominoType::Ghost
 			});
 			self.ghost_tm = virtual_tm;
-			self.ghost_tm.kind = TetrominoKind::Ghost;
+			self.ghost_tm.tm_type = TetrominoType::Ghost;
 			self.board.update_area(&self.ghost_tm);
 		}
 	}
@@ -475,13 +486,11 @@ impl State {
 			.is_collision_with_ignore(points, &self.active_tm.points)
 	}
 
-	fn update_stats(&mut self) {
+	fn update_stats(&mut self, rows_len: usize) {
 		let previous_level = self.level;
 
-		let lines = self.board.check_and_clear_line();
-
-		if lines > 0 {
-			self.lines += lines;
+		if rows_len > 0 {
+			self.lines += rows_len as u32;
 
 			let new_level = self.lines / 10 + 1;
 
@@ -490,7 +499,7 @@ impl State {
 				self.handler.change_level(self.level);
 			}
 
-			let base_score = match lines {
+			let base_score = match rows_len {
 				1 => 100,
 				2 => 300,
 				3 => 500,
@@ -519,6 +528,14 @@ impl State {
 			self.score = last_game.score;
 			self.lines = last_game.lines;
 			self.combo = last_game.combo;
+		}
+	}
+
+	pub fn update_clear_rows_progress(&mut self) {
+		self.board.update_clear_rows_progress();
+		if self.board.status == BoardStatus::Done {
+			self.board.status = BoardStatus::None;
+			self.gen_next_tm();
 		}
 	}
 }

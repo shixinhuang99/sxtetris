@@ -1,111 +1,107 @@
 use ratatui::{
 	layout::{Constraint, Layout, Rect},
-	style::{Color, Style, Stylize},
-	widgets::{Block, BorderType, Borders},
+	style::Style,
+	widgets::{Block, BorderType},
 	Frame,
 };
 
-use crate::state::{State, TetrominoKind};
+use crate::{
+	consts::BOARD_VISIBLE_ROWS,
+	state::{State, TetrominoType},
+};
 
 pub fn board(
 	f: &mut Frame,
 	rect: Rect,
-	state: &State,
+	state: &mut State,
 	cell_height: u16,
 	cell_width: u16,
-	is_main_board: bool,
 ) {
-	let board = if is_main_board {
-		&state.board
-	} else {
-		&state.preview_board
-	};
+	let v_chunks = Layout::vertical(vec![
+		Constraint::Length(cell_height);
+		BOARD_VISIBLE_ROWS
+	])
+	.split(rect);
 
-	let rows = if is_main_board {
-		board.rows / 2
-	} else {
-		board.rows
-	};
-
-	let v_chunks =
-		Layout::vertical(vec![Constraint::Length(cell_height); rows])
-			.split(rect);
+	let ghost_style = get_ghost_style(&state.active_tm.tm_type);
 
 	for (y, v_area) in v_chunks.iter().enumerate() {
 		let h_chunks = Layout::horizontal(vec![
 			Constraint::Length(cell_width);
-			board.cols
+			state.board.cols
 		])
 		.split(*v_area);
 
-		let y_with_offest = if is_main_board {
-			y + rows
-		} else {
-			y
-		};
+		let y = y + BOARD_VISIBLE_ROWS;
 
 		for (x, h_area) in h_chunks.iter().enumerate() {
-			let tm_kind = board.get_cell(x, y_with_offest);
-
-			let piece_style = create_style(tm_kind);
-
-			let mut piece = if tm_kind.is_none_or_ghost() {
-				Block::bordered()
-					.border_type(BorderType::Rounded)
-					.border_style(piece_style)
-			} else {
-				let mut outer =
-					Block::bordered().border_type(BorderType::QuadrantInside);
-
-				let inner_area = outer.inner(*h_area);
-				let mut inside = Block::new().style(create_style_bg(tm_kind));
-
-				if state.active_tm.points.contains(x, y_with_offest)
-					&& state.blinking
-				{
-					outer = outer.dark_gray();
-					inside = inside.on_dark_gray();
-				} else {
-					outer = outer.border_style(piece_style);
-				}
-
-				f.render_widget(inside, inner_area);
-
-				outer
-			};
-
-			if !is_main_board && *tm_kind == TetrominoKind::None {
-				piece = piece.borders(Borders::NONE);
+			if state.board.confetti.is_target_point(x, y) {
+				state.board.confetti.spawn_particles(
+					h_area.x,
+					h_area.y,
+					h_area.width,
+					h_area.height,
+				);
 			}
 
-			f.render_widget(piece, *h_area);
+			let tm_type = state.board.get_cell(x, y);
+
+			let tm_color = tm_type.color();
+			let piece_style = Style::new().fg(tm_color);
+
+			if *tm_type == TetrominoType::Ghost {
+				f.render_widget(
+					Block::bordered()
+						.border_type(BorderType::Rounded)
+						.border_style(ghost_style),
+					*h_area,
+				);
+				continue;
+			}
+
+			if *tm_type == TetrominoType::None {
+				f.render_widget(
+					Block::bordered()
+						.border_type(BorderType::Rounded)
+						.border_style(piece_style),
+					*h_area,
+				);
+				continue;
+			}
+
+			let mut outer_block =
+				Block::bordered().border_type(BorderType::QuadrantInside);
+			let inner_area = outer_block.inner(*h_area);
+			let mut inside_block =
+				Block::new().style(Style::new().bg(tm_color));
+
+			if state.active_tm.points.contains(x, y) && state.blinking {
+				let tm_dark_color = tm_type.dark_color();
+				outer_block = outer_block.style(Style::new().fg(tm_dark_color));
+				inside_block =
+					inside_block.style(Style::new().bg(tm_dark_color));
+			} else {
+				outer_block = outer_block.border_style(piece_style);
+			}
+
+			f.render_widget(inside_block, inner_area);
+			f.render_widget(outer_block, *h_area);
 		}
 	}
 }
 
-fn create_style(tm_kind: &TetrominoKind) -> Style {
-	match tm_kind {
-		TetrominoKind::I => Style::new().fg(Color::Cyan),
-		TetrominoKind::O => Style::new().fg(Color::LightYellow),
-		TetrominoKind::T => Style::new().fg(Color::Magenta),
-		TetrominoKind::L => Style::new().fg(Color::Yellow),
-		TetrominoKind::J => Style::new().fg(Color::Blue),
-		TetrominoKind::S => Style::new().fg(Color::Green),
-		TetrominoKind::Z => Style::new().fg(Color::Red),
-		TetrominoKind::None => Style::new().fg(Color::DarkGray),
-		TetrominoKind::Ghost => Style::new().fg(Color::Gray),
-	}
-}
+// The borders get bigger when using RGB colors, so here we use ANSI colors
+fn get_ghost_style(tm_type: &TetrominoType) -> Style {
+	use ratatui::style::Stylize;
 
-fn create_style_bg(tm_kind: &TetrominoKind) -> Style {
-	match tm_kind {
-		TetrominoKind::I => Style::new().bg(Color::Cyan),
-		TetrominoKind::O => Style::new().bg(Color::LightYellow),
-		TetrominoKind::T => Style::new().bg(Color::Magenta),
-		TetrominoKind::L => Style::new().bg(Color::Yellow),
-		TetrominoKind::J => Style::new().bg(Color::Blue),
-		TetrominoKind::S => Style::new().bg(Color::Green),
-		TetrominoKind::Z => Style::new().bg(Color::Red),
+	match tm_type {
+		TetrominoType::I => Style::new().cyan(),
+		TetrominoType::O => Style::new().light_yellow(),
+		TetrominoType::T => Style::new().magenta(),
+		TetrominoType::L => Style::new().yellow(),
+		TetrominoType::J => Style::new().light_blue(),
+		TetrominoType::S => Style::new().green(),
+		TetrominoType::Z => Style::new().light_red(),
 		_ => unreachable!(),
 	}
 }

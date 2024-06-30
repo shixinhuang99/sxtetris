@@ -7,13 +7,13 @@ use ratatui::{
 use tui_big_text::{BigText, PixelSize};
 use Constraint::{Length, Ratio};
 
-use super::{board::board, utils::rounded_block};
+use super::{preview_board::preview_board, utils::rounded_block};
 use crate::state::State;
 
 pub fn sidebar(
 	f: &mut Frame,
 	rect: Rect,
-	state: &State,
+	state: &mut State,
 	cell_height: u16,
 	cell_width: u16,
 ) {
@@ -36,7 +36,7 @@ pub fn sidebar(
 	.areas::<2>(vertical_chunks[0]);
 
 	render_text(f, "NEXT".to_string(), chunks_0[0], Color::Blue);
-	board(f, chunks_0[1], state, cell_height, cell_width, false);
+	preview_board(f, chunks_0[1], state, cell_height, cell_width);
 
 	let chunks_1 = create_text_chunks(vertical_chunks[1]);
 	render_text(f, "SCORE".to_string(), chunks_1[0], Color::Blue);

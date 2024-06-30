@@ -96,7 +96,7 @@ impl Save {
 			return Ok(());
 		}
 
-		let mut scores = vec![];
+		let mut scores = Vec::new();
 		let mut board = String::new();
 		let mut bag = String::new();
 		let mut active_tm = String::new();

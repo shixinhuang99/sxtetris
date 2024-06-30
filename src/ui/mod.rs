@@ -1,10 +1,12 @@
 mod about;
 mod board;
+mod confetti;
 mod count_down;
 mod game_over_menu;
 mod help;
 mod list;
 mod pause_menu;
+mod preview_board;
 mod scores;
 mod sidebar;
 mod start_menu;
@@ -12,6 +14,7 @@ mod utils;
 
 use about::about;
 use board::board;
+use confetti::Confetti;
 use count_down::count_down;
 use game_over_menu::game_over_menu;
 use help::help;
@@ -36,7 +39,7 @@ const BOARD_VISIBLE_ROWS_U16: u16 = BOARD_VISIBLE_ROWS as u16;
 
 const BOARD_COLS_U16: u16 = BOARD_COLS as u16;
 
-pub fn ui(f: &mut Frame, state: &State) {
+pub fn ui(f: &mut Frame, state: &mut State) {
 	let screen = f.size();
 
 	let bg_block = Block::new()
@@ -84,7 +87,10 @@ pub fn ui(f: &mut Frame, state: &State) {
 			.flex(Flex::Start)
 			.areas::<1>(horizontal_area[1])[0];
 
-	board(f, left_area, state, cell_height, cell_width, true);
+	board(f, left_area, state, cell_height, cell_width);
+
+	let confetti = Confetti;
+	f.render_stateful_widget(confetti, f.size(), &mut state.board.confetti);
 
 	sidebar(f, right_area, state, cell_height, cell_width);
 
