@@ -1,5 +1,6 @@
 mod about;
 mod board;
+mod confetti;
 mod count_down;
 mod game_over_menu;
 mod help;
@@ -13,6 +14,7 @@ mod utils;
 
 use about::about;
 use board::board;
+use confetti::Confetti;
 use count_down::count_down;
 use game_over_menu::game_over_menu;
 use help::help;
@@ -28,7 +30,6 @@ use sidebar::sidebar;
 use start_menu::start_menu;
 
 use crate::{
-	animation::confetti::Confetti,
 	consts::{BOARD_COLS, BOARD_VISIBLE_ROWS, MIN_CELL_HEIGHT, MIN_CELL_WIDTH},
 	handler::is_paused,
 	state::{Screen, State},
@@ -89,7 +90,7 @@ pub fn ui(f: &mut Frame, state: &mut State) {
 	board(f, left_area, state, cell_height, cell_width);
 
 	let confetti = Confetti;
-	f.render_stateful_widget(confetti, f.size(), &mut state.confetti_state);
+	f.render_stateful_widget(confetti, f.size(), &mut state.board.confetti);
 
 	sidebar(f, right_area, state, cell_height, cell_width);
 

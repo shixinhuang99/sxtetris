@@ -1,4 +1,3 @@
-mod animation;
 mod app;
 mod consts;
 mod handler;

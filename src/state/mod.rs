@@ -1,5 +1,6 @@
 mod bag;
 mod board;
+mod confetti;
 mod consts;
 mod list;
 mod point;
@@ -8,6 +9,7 @@ mod tetromino_type;
 
 use bag::Bag;
 use board::{BoardState, BoardStatus};
+pub use confetti::ConfettiState;
 use consts::{
 	game_over_menu_idx, pause_menu_idx, start_menu_idx, GAME_OVER_MENU_ITEMS,
 	PAUSE_MENU_ITEMS, START_MENU_ITEMS,
@@ -18,7 +20,6 @@ use tetromino::{Tetromino, TetrominoAction};
 pub use tetromino_type::TetrominoType;
 
 use crate::{
-	animation::confetti::{ConfettiDirection, ConfettiState},
 	consts::{BOARD_COLS, BOARD_ROWS, PREVIEW_BOARD_COLS, PREVIEW_BOARD_ROWS},
 	handler::{is_locked, is_paused, GameEvent, SubHandler},
 	save::Save,
@@ -56,7 +57,6 @@ pub struct State {
 	pub blinking: bool,
 	pub show_help: bool,
 	pub show_about: bool,
-	pub confetti_state: ConfettiState,
 }
 
 impl State {
@@ -88,7 +88,6 @@ impl State {
 			blinking: false,
 			show_help: false,
 			show_about: false,
-			confetti_state: ConfettiState::new(),
 		}
 	}
 
@@ -312,7 +311,6 @@ impl State {
 		self.is_game_over = false;
 		self.blinking = false;
 		self.screen = Screen::Game;
-		self.confetti_state.reset();
 
 		self.active_tm = Tetromino::new(self.bag.next());
 		self.update_ghost_tm();
@@ -335,8 +333,6 @@ impl State {
 	}
 
 	fn pre_gen_next_tm(&mut self) {
-		self.push_tm_points_to_confetti();
-
 		let cleard_rows_len = self.board.check_need_cleared_rows();
 
 		self.update_stats(cleard_rows_len);
@@ -532,64 +528,6 @@ impl State {
 			self.score = last_game.score;
 			self.lines = last_game.lines;
 			self.combo = last_game.combo;
-		}
-	}
-
-	pub fn push_tm_points_to_confetti(&mut self) {
-		use ConfettiDirection::*;
-
-		const DIRS: [ConfettiDirection; 4] = [Top, Right, Bottom, Left];
-		let points = self.active_tm.points.usize_points();
-
-		for p in points.iter() {
-			for dir in DIRS {
-				match dir {
-					Top => {
-						if p.1 == 0 {
-							continue;
-						}
-						let y = p.1 - 1;
-						if points.contains(&(p.0, y))
-							|| self.board.get_cell(p.0, y).is_none_or_ghost()
-						{
-							continue;
-						}
-						self.confetti_state.push_tm_point(p.0, p.1, dir);
-					}
-					Right => {
-						let x = p.0 + 1;
-						if x >= self.board.cols
-							|| points.contains(&(x, p.1))
-							|| self.board.get_cell(x, p.1).is_none_or_ghost()
-						{
-							continue;
-						}
-						self.confetti_state.push_tm_point(p.0, p.1, dir);
-					}
-					Bottom => {
-						let y = p.1 + 1;
-						if y >= self.board.rows
-							|| points.contains(&(p.0, y))
-							|| self.board.get_cell(p.0, y).is_none_or_ghost()
-						{
-							continue;
-						}
-						self.confetti_state.push_tm_point(p.0, p.1, dir);
-					}
-					Left => {
-						if p.0 == 0 {
-							continue;
-						}
-						let x = p.0 - 1;
-						if points.contains(&(x, p.1))
-							|| self.board.get_cell(x, p.1).is_none_or_ghost()
-						{
-							continue;
-						}
-						self.confetti_state.push_tm_point(p.0, p.1, dir);
-					}
-				}
-			}
 		}
 	}
 

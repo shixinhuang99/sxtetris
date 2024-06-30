@@ -35,14 +35,14 @@ pub fn board(
 		let y = y + BOARD_VISIBLE_ROWS;
 
 		for (x, h_area) in h_chunks.iter().enumerate() {
-			let dirs = state.confetti_state.get_point_dirs(x, y);
-			state.confetti_state.spawn_particles(
-				h_area.x,
-				h_area.y,
-				h_area.width,
-				h_area.height,
-				dirs,
-			);
+			if state.board.confetti.is_target_point(x, y) {
+				state.board.confetti.spawn_particles(
+					h_area.x,
+					h_area.y,
+					h_area.width,
+					h_area.height,
+				);
+			}
 
 			let tm_type = state.board.get_cell(x, y);
 

@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use super::{point::Points, Tetromino, TetrominoType};
+use super::{confetti::ConfettiState, point::Points, Tetromino, TetrominoType};
 
 pub struct BoardState {
 	pub board: VecDeque<Vec<TetrominoType>>,
@@ -9,6 +9,7 @@ pub struct BoardState {
 	cleared_rows: Vec<usize>,
 	col_cursor: usize,
 	pub status: BoardStatus,
+	pub confetti: ConfettiState,
 }
 
 #[derive(PartialEq)]
@@ -29,6 +30,7 @@ impl BoardState {
 			cleared_rows: Vec::new(),
 			col_cursor: 0,
 			status: BoardStatus::None,
+			confetti: ConfettiState::new(),
 		}
 	}
 
@@ -40,6 +42,7 @@ impl BoardState {
 		self.cleared_rows.clear();
 		self.col_cursor = 0;
 		self.status = BoardStatus::None;
+		self.confetti.reset();
 	}
 
 	pub fn get_cell(&self, x: usize, y: usize) -> &TetrominoType {
@@ -113,6 +116,7 @@ impl BoardState {
 			for (x, cell) in row.iter_mut().enumerate() {
 				if x == self.col_cursor {
 					*cell = TetrominoType::None;
+					self.confetti.push_points(x, y);
 				}
 			}
 		}
@@ -127,6 +131,7 @@ impl BoardState {
 	}
 
 	pub fn update_clear_rows_progress(&mut self) {
+		self.confetti.update_particles();
 		if self.status != BoardStatus::Pending {
 			return;
 		}
