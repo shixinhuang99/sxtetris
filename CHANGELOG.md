@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2024-06-30
+
+[aad8989](aad8989a1dba85300bea4765357bbe835b7db6d1)...[2663e2f](2663e2ff237da6f41700bb7032ac72aa70413467)
+
+### Documentation
+
+- Add AUR instructions ([cfc965c](cfc965c1e2de5504f23d0758022e4d84e75d2ec0))
+- Update demo video ([2663e2f](2663e2ff237da6f41700bb7032ac72aa70413467))
+
+### Features
+
+- Added animation and particle effects when clearing rows, tetriminos color improvement (#15) ([d416caf](d416cafee1da5e47d16a854b3e0b5bc955907ff3))
+
+### Refactor
+
+- Add popup builder and improve code some else (#14) ([b5140f9](b5140f94953317538d6ebedca03e5c64de439348))
+
 ## [1.1.0] - 2024-06-23
 
 ### Bug Fixes

@@ -27,5 +27,5 @@ push-tag tag:
 	git tag {{tag}}
 	git push origin {{tag}}
 
-run *args:
+run:
 	cargo +stable run -F _dev
