@@ -36,7 +36,7 @@ jobs:
           tool: just,taplo-cli
 
       - name: Extra
-        if: matrix.os == "ubuntu-latest"
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install libasound2-dev
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Extra
-        if: matrix.os == "ubuntu-latest"
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install libasound2-dev
