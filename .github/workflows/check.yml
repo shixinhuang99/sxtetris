@@ -59,6 +59,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Extra
+        if: matrix.os == "ubuntu-latest"
+        run: |
+          sudo apt-get update
+          sudo apt-get install libasound2-dev
+          export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig
+
       - name: Cargo Build
         run: |
           rustup +stable target add ${{ matrix.target }}
