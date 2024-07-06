@@ -1,4 +1,5 @@
 mod app;
+mod audio;
 mod consts;
 mod handler;
 mod save;

@@ -7,6 +7,8 @@ mod point;
 mod tetromino;
 mod tetromino_type;
 
+use std::rc::Rc;
+
 use bag::Bag;
 use board::{BoardState, BoardStatus};
 pub use confetti::ConfettiState;
@@ -20,6 +22,7 @@ use tetromino::{Tetromino, TetrominoAction};
 pub use tetromino_type::TetrominoType;
 
 use crate::{
+	audio::Audio,
 	consts::{BOARD_COLS, BOARD_ROWS, PREVIEW_BOARD_COLS, PREVIEW_BOARD_ROWS},
 	handler::{is_locked, is_paused, GameEvent, SubHandler},
 	save::Save,
@@ -34,7 +37,8 @@ pub enum Screen {
 }
 
 pub struct State {
-	pub handler: SubHandler,
+	handler: SubHandler,
+	audio: Rc<Audio>,
 	pub running: bool,
 	pub screen: Screen,
 	pub start_menu: ListState,
@@ -60,9 +64,10 @@ pub struct State {
 }
 
 impl State {
-	pub fn new(handler: SubHandler) -> Self {
+	pub fn new(handler: SubHandler, audio: Rc<Audio>) -> Self {
 		Self {
 			handler,
+			audio,
 			running: true,
 			screen: Screen::StartMenu,
 			start_menu: ListState::new(&START_MENU_ITEMS),
@@ -106,16 +111,19 @@ impl State {
 		}
 		match self.screen {
 			Screen::StartMenu => {
-				self.update_start_menu(event);
+				self.update_start_menu(&event);
+				self.paly_menu_sound(&event);
 			}
 			Screen::Game => {
 				if self.is_game_over {
-					self.update_game_over_menu(event);
+					self.update_game_over_menu(&event);
+					self.paly_menu_sound(&event);
 				} else if is_paused() {
 					if self.count_down > 0 {
 						return;
 					}
-					self.update_pause_menu(event);
+					self.update_pause_menu(&event);
+					self.paly_menu_sound(&event);
 				} else {
 					self.update_game(event);
 				}
@@ -127,24 +135,30 @@ impl State {
 		match event {
 			GameEvent::Left => {
 				self.move_tm(TetrominoAction::Left);
+				self.audio.paly_move_sound();
 			}
 			GameEvent::Right => {
 				self.move_tm(TetrominoAction::Right);
+				self.audio.paly_move_sound();
 			}
 			GameEvent::Down => {
 				self.move_tm(TetrominoAction::SoftDrop);
+				self.audio.paly_move_sound();
 			}
 			GameEvent::Space => {
 				self.move_tm(TetrominoAction::HardDrop);
 			}
 			GameEvent::Up => {
 				self.rotate_tm(TetrominoAction::RotateRight);
+				self.audio.paly_move_sound();
 			}
 			GameEvent::Z => {
 				self.rotate_tm(TetrominoAction::RotateLeft);
+				self.audio.paly_move_sound();
 			}
 			GameEvent::Esc | GameEvent::P | GameEvent::FocusLost => {
 				self.handler.pause();
+				self.audio.paly_menu_key_sound();
 			}
 			GameEvent::Gravity => {
 				self.move_tm(TetrominoAction::SoftDrop);
@@ -159,7 +173,7 @@ impl State {
 		};
 	}
 
-	fn update_start_menu(&mut self, event: GameEvent) {
+	fn update_start_menu(&mut self, event: &GameEvent) {
 		use start_menu_idx::*;
 
 		match event {
@@ -204,7 +218,7 @@ impl State {
 		}
 	}
 
-	fn update_pause_menu(&mut self, event: GameEvent) {
+	fn update_pause_menu(&mut self, event: &GameEvent) {
 		use pause_menu_idx::*;
 
 		match event {
@@ -237,7 +251,7 @@ impl State {
 					_ => (),
 				}
 			}
-			GameEvent::Esc | GameEvent::P => {
+			GameEvent::Esc => {
 				if self.show_scores {
 					self.show_scores = false;
 				} else if self.show_help {
@@ -251,7 +265,7 @@ impl State {
 		}
 	}
 
-	fn update_game_over_menu(&mut self, event: GameEvent) {
+	fn update_game_over_menu(&mut self, event: &GameEvent) {
 		use game_over_menu_idx::*;
 
 		match event {
@@ -276,7 +290,7 @@ impl State {
 					_ => (),
 				}
 			}
-			GameEvent::Esc | GameEvent::P => {
+			GameEvent::Esc => {
 				if self.show_scores {
 					self.show_scores = false;
 				}
@@ -293,6 +307,7 @@ impl State {
 			self.preview_board.update_area(&self.preview_tm);
 			self.handler.pause();
 			self.handler.spawn_count_down_task(self.count_down);
+			self.audio.play_bg_music();
 		} else {
 			self.new_game();
 		}
@@ -320,6 +335,9 @@ impl State {
 
 		self.handler.spawn_gravity_task();
 		self.handler.cancel_pause();
+
+		self.audio.stop_bg_music();
+		self.audio.play_bg_music();
 	}
 
 	fn game_over(&mut self) {
@@ -330,14 +348,20 @@ impl State {
 		self.scores.push(self.score);
 		self.scores.sort_unstable_by(|a, b| b.cmp(a));
 		self.scores.truncate(10);
+
+		self.audio.stop_bg_music();
+		self.audio.paly_game_over_sound();
 	}
 
 	fn pre_gen_next_tm(&mut self) {
+		self.audio.paly_lock_sound();
+
 		let cleard_rows_len = self.board.check_need_cleared_rows();
 
 		self.update_stats(cleard_rows_len);
 
 		if cleard_rows_len > 0 {
+			self.audio.paly_line_clear_sound();
 			return;
 		}
 
@@ -536,6 +560,19 @@ impl State {
 		if self.board.status == BoardStatus::Done {
 			self.board.status = BoardStatus::None;
 			self.gen_next_tm();
+		}
+	}
+
+	fn paly_menu_sound(&self, event: &GameEvent) {
+		if matches!(
+			event,
+			GameEvent::Up
+				| GameEvent::Down
+				| GameEvent::Enter
+				| GameEvent::Esc
+				| GameEvent::P
+		) {
+			self.audio.paly_menu_key_sound();
 		}
 	}
 }

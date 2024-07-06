@@ -18,6 +18,10 @@ fastrand = "2.0.2"
 futures-util = "=0.3.30"
 log = { version = "0.4.21", optional = true }
 ratatui = "=0.26.1"
+rodio = { version = "0.19.0", default-features = false, features = [
+  "wav",
+  "mp3",
+] }
 simplelog = { version = "0.12.2", optional = true }
 tokio = { version = "=1.37.0", features = [
   "rt",
