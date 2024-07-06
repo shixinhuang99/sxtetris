@@ -17,6 +17,8 @@ type SoundBuf = Decoder<Cursor<&'static [u8]>>;
 
 pub struct Audio {
 	inner: Option<AudioInner>,
+	music_enable: bool,
+	sound_enable: bool,
 }
 
 impl Audio {
@@ -25,80 +27,130 @@ impl Audio {
 
 		Self {
 			inner,
+			music_enable: false,
+			sound_enable: true,
 		}
 	}
 
 	pub fn stop_all(&self) {
 		if let Some(inner) = &self.inner {
-			inner.bg_music_sink.stop();
-			inner.game_over_sink.stop();
-			inner.menu_sink.stop();
-			inner.lock_sink.stop();
-			inner.clear_sink.stop();
-			inner.move_sink.stop();
+			inner.bg_music_sound.stop();
+			inner.game_over_sound.stop();
+			inner.menu_sound.stop();
+			inner.lock_sound.stop();
+			inner.clear_sound.stop();
+			inner.move_sound.stop();
 		}
 	}
 
-	pub fn play_bg_music(&self) {
+	pub fn disable_sound_effects(&mut self) {
+		self.sound_enable = false;
 		if let Some(inner) = &self.inner {
-			if inner.bg_music_sink.empty() {
+			inner.game_over_sound.clear();
+			inner.menu_sound.clear();
+			inner.lock_sound.clear();
+			inner.clear_sound.clear();
+			inner.move_sound.clear();
+		}
+	}
+
+	pub fn enable_sound_effects(&mut self) {
+		self.sound_enable = true;
+	}
+
+	pub fn disable_music(&mut self) {
+		self.music_enable = false;
+		if let Some(inner) = &self.inner {
+			inner.bg_music_sound.pause();
+		}
+	}
+
+	pub fn enable_music(&mut self) {
+		self.music_enable = true;
+	}
+
+	pub fn play_bg_music(&self) {
+		if !self.music_enable {
+			return;
+		}
+		if let Some(inner) = &self.inner {
+			if inner.bg_music_sound.empty() {
 				inner
-					.bg_music_sink
+					.bg_music_sound
 					.append(inner.bg_music_sound_source.clone());
-				inner.bg_music_sink.play();
 			}
+			inner.bg_music_sound.play();
 		}
 	}
 
 	pub fn stop_bg_music(&self) {
 		if let Some(inner) = &self.inner {
-			inner.bg_music_sink.clear();
+			inner.bg_music_sound.clear();
 		}
 	}
 
 	pub fn paly_game_over_sound(&self) {
+		if !self.sound_enable {
+			return;
+		}
 		if let Some(inner) = &self.inner {
-			if inner.game_over_sink.empty() {
+			if inner.game_over_sound.empty() {
 				inner
-					.game_over_sink
+					.game_over_sound
 					.append(inner.game_over_sound_source.clone());
 			}
+			inner.game_over_sound.play();
 		}
 	}
 
 	pub fn paly_menu_key_sound(&self) {
+		if !self.sound_enable {
+			return;
+		}
 		if let Some(inner) = &self.inner {
-			if inner.menu_sink.empty() {
-				inner.menu_sink.append(inner.menu_sound_source.clone());
+			if inner.menu_sound.empty() {
+				inner.menu_sound.append(inner.menu_sound_source.clone());
 			}
+			inner.menu_sound.play();
 		}
 	}
 
 	pub fn paly_move_sound(&self) {
+		if !self.sound_enable {
+			return;
+		}
 		if let Some(inner) = &self.inner {
-			if inner.move_sink.empty() {
-				inner.move_sink.append(inner.move_sound_source.clone());
+			if inner.move_sound.empty() {
+				inner.move_sound.append(inner.move_sound_source.clone());
 			}
+			inner.move_sound.play();
 		}
 	}
 
 	pub fn paly_lock_sound(&self) {
+		if !self.sound_enable {
+			return;
+		}
 		if let Some(inner) = &self.inner {
-			if inner.lock_sink.empty() {
-				inner.lock_sink.append(inner.lock_sound_source.clone());
+			if inner.lock_sound.empty() {
+				inner.lock_sound.append(inner.lock_sound_source.clone());
 			}
+			inner.lock_sound.play();
 		}
 	}
 
 	pub fn paly_line_clear_sound(&self) {
+		if !self.sound_enable {
+			return;
+		}
 		if let Some(inner) = &self.inner {
-			if inner.clear_sink.empty() {
-				inner.clear_sink.append(inner.clear_sound_source.clone());
+			if inner.clear_sound.empty() {
+				inner.clear_sound.append(inner.clear_sound_source.clone());
 			} else {
-				inner.clear_sink.clear();
-				inner.clear_sink.append(inner.clear_sound_source.clone());
-				inner.clear_sink.play();
+				inner.clear_sound.clear();
+				inner.clear_sound.append(inner.clear_sound_source.clone());
 			}
+			inner.clear_sound.play();
 		}
 	}
 }
@@ -107,17 +159,17 @@ struct AudioInner {
 	_stream: OutputStream,
 	_handle: OutputStreamHandle,
 	bg_music_sound_source: Repeat<Amplify<SoundBuf>>,
-	bg_music_sink: Sink,
+	bg_music_sound: Sink,
 	menu_sound_source: Buffered<SoundBuf>,
-	menu_sink: Sink,
+	menu_sound: Sink,
 	move_sound_source: Buffered<Amplify<SoundBuf>>,
-	move_sink: Sink,
+	move_sound: Sink,
 	lock_sound_source: Buffered<SoundBuf>,
-	lock_sink: Sink,
+	lock_sound: Sink,
 	clear_sound_source: Buffered<SoundBuf>,
-	clear_sink: Sink,
+	clear_sound: Sink,
 	game_over_sound_source: Buffered<SoundBuf>,
-	game_over_sink: Sink,
+	game_over_sound: Sink,
 }
 
 impl AudioInner {
@@ -156,17 +208,17 @@ impl AudioInner {
 			_stream,
 			_handle,
 			bg_music_sound_source,
-			bg_music_sink,
+			bg_music_sound: bg_music_sink,
 			menu_sound_source,
-			menu_sink,
+			menu_sound: menu_sink,
 			move_sound_source,
-			move_sink,
+			move_sound: move_sink,
 			lock_sound_source,
-			lock_sink,
+			lock_sound: lock_sink,
 			clear_sound_source,
-			clear_sink,
+			clear_sound: clear_sink,
 			game_over_sound_source,
-			game_over_sink,
+			game_over_sound: game_over_sink,
 		})
 	}
 }

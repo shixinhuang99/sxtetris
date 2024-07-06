@@ -1,9 +1,6 @@
-use std::rc::Rc;
-
 use anyhow::Result;
 
 use crate::{
-	audio::Audio,
 	handler::{GameEvent, MainHandler},
 	save::Save,
 	state::State,
@@ -16,7 +13,6 @@ pub struct App {
 	handler: MainHandler,
 	state: State,
 	save: Save,
-	audio: Rc<Audio>,
 }
 
 impl App {
@@ -27,8 +23,7 @@ impl App {
 
 		let term = Term::new()?;
 		let handler = MainHandler::new();
-		let audio = Rc::new(Audio::new());
-		let mut state = State::new(handler.create_sub_handler(), audio.clone());
+		let mut state = State::new(handler.create_sub_handler());
 
 		state.read_save(&save);
 
@@ -37,7 +32,6 @@ impl App {
 			handler,
 			state,
 			save,
-			audio,
 		})
 	}
 
@@ -64,7 +58,7 @@ impl App {
 			}
 		}
 
-		self.audio.stop_all();
+		self.state.audio.stop_all();
 
 		self.save.write(&self.state)?;
 
