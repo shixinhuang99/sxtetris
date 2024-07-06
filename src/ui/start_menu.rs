@@ -13,12 +13,12 @@ pub fn start_menu(f: &mut Frame, rect: Rect, list_state: &ListState) {
 	let outer_area = centered_rect(
 		rect,
 		Constraint::Percentage(60),
-		Constraint::Percentage(90),
+		Constraint::Percentage(100),
 	);
 
 	let chunks = Layout::vertical([
-		Constraint::Percentage(35),
-		Constraint::Percentage(65),
+		Constraint::Percentage(30),
+		Constraint::Percentage(70),
 	])
 	.areas::<2>(outer_area);
 

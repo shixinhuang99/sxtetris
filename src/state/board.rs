@@ -10,6 +10,7 @@ pub struct BoardState {
 	col_cursor: usize,
 	pub status: BoardStatus,
 	pub confetti: ConfettiState,
+	pub confetti_enable: bool,
 }
 
 #[derive(PartialEq)]
@@ -31,6 +32,7 @@ impl BoardState {
 			col_cursor: 0,
 			status: BoardStatus::None,
 			confetti: ConfettiState::new(),
+			confetti_enable: true,
 		}
 	}
 
@@ -116,7 +118,9 @@ impl BoardState {
 			for (x, cell) in row.iter_mut().enumerate() {
 				if x == self.col_cursor {
 					*cell = TetrominoType::None;
-					self.confetti.push_points(x, y);
+					if self.confetti_enable {
+						self.confetti.push_points(x, y);
+					}
 				}
 			}
 		}

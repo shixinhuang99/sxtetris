@@ -8,6 +8,7 @@ mod list;
 mod pause_menu;
 mod preview_board;
 mod scores;
+mod setting_menu;
 mod sidebar;
 mod start_menu;
 mod utils;
@@ -26,6 +27,7 @@ use ratatui::{
 	Frame,
 };
 use scores::scores;
+use setting_menu::setting_menu;
 use sidebar::sidebar;
 use start_menu::start_menu;
 
@@ -58,6 +60,8 @@ pub fn ui(f: &mut Frame, state: &mut State) {
 			help(f);
 		} else if state.show_about {
 			about(f);
+		} else if state.setting.show {
+			setting_menu(f, &state.setting.menu);
 		}
 
 		return;
@@ -106,6 +110,8 @@ pub fn ui(f: &mut Frame, state: &mut State) {
 		scores(f, state);
 	} else if state.show_help {
 		help(f);
+	} else if state.setting.show {
+		setting_menu(f, &state.setting.menu);
 	}
 }
 

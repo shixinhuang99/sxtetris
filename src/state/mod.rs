@@ -4,10 +4,9 @@ mod confetti;
 mod consts;
 mod list;
 mod point;
+mod setting;
 mod tetromino;
 mod tetromino_type;
-
-use std::rc::Rc;
 
 use bag::Bag;
 use board::{BoardState, BoardStatus};
@@ -18,6 +17,7 @@ use consts::{
 };
 pub use list::ListState;
 use point::Points;
+use setting::Setting;
 use tetromino::{Tetromino, TetrominoAction};
 pub use tetromino_type::TetrominoType;
 
@@ -38,7 +38,8 @@ pub enum Screen {
 
 pub struct State {
 	handler: SubHandler,
-	audio: Rc<Audio>,
+	pub audio: Audio,
+	pub setting: Setting,
 	pub running: bool,
 	pub screen: Screen,
 	pub start_menu: ListState,
@@ -64,10 +65,11 @@ pub struct State {
 }
 
 impl State {
-	pub fn new(handler: SubHandler, audio: Rc<Audio>) -> Self {
+	pub fn new(handler: SubHandler) -> Self {
 		Self {
 			handler,
-			audio,
+			audio: Audio::new(),
+			setting: Setting::new(),
 			running: true,
 			screen: Screen::StartMenu,
 			start_menu: ListState::new(&START_MENU_ITEMS),
@@ -109,21 +111,26 @@ impl State {
 			}
 			return;
 		}
+		if self.setting.show {
+			self.update_setting_menu(&event);
+			self.paly_menu_key_sound(&event);
+			return;
+		}
 		match self.screen {
 			Screen::StartMenu => {
 				self.update_start_menu(&event);
-				self.paly_menu_sound(&event);
+				self.paly_menu_key_sound(&event);
 			}
 			Screen::Game => {
 				if self.is_game_over {
 					self.update_game_over_menu(&event);
-					self.paly_menu_sound(&event);
+					self.paly_menu_key_sound(&event);
 				} else if is_paused() {
 					if self.count_down > 0 {
 						return;
 					}
 					self.update_pause_menu(&event);
-					self.paly_menu_sound(&event);
+					self.paly_menu_key_sound(&event);
 				} else {
 					self.update_game(event);
 				}
@@ -191,6 +198,9 @@ impl State {
 					SCORES => {
 						self.show_scores = true;
 					}
+					SETTING => {
+						self.setting.show = true;
+					}
 					HELP => {
 						self.show_help = true;
 					}
@@ -210,6 +220,8 @@ impl State {
 					self.show_help = false;
 				} else if self.show_about {
 					self.show_about = false;
+				} else if self.setting.show {
+					self.setting.show = false;
 				} else {
 					self.running = false;
 				}
@@ -242,6 +254,9 @@ impl State {
 					SCORES => {
 						self.show_scores = true;
 					}
+					SETTING => {
+						self.setting.show = true;
+					}
 					HELP => {
 						self.show_help = true;
 					}
@@ -256,6 +271,8 @@ impl State {
 					self.show_scores = false;
 				} else if self.show_help {
 					self.show_help = false;
+				} else if self.setting.show {
+					self.setting.show = false;
 				} else {
 					self.handler.cancel_pause();
 					self.pause_menu.reset();
@@ -294,6 +311,38 @@ impl State {
 				if self.show_scores {
 					self.show_scores = false;
 				}
+			}
+			_ => (),
+		}
+	}
+
+	fn update_setting_menu(&mut self, event: &GameEvent) {
+		match event {
+			GameEvent::Up => {
+				self.setting.menu.up();
+			}
+			GameEvent::Down => {
+				self.setting.menu.down();
+			}
+			GameEvent::Enter => {
+				self.setting.handle_enter();
+				self.board.confetti_enable = self.setting.particles;
+				if self.setting.music {
+					self.audio.enable_music();
+					if self.screen == Screen::Game {
+						self.audio.play_bg_music();
+					}
+				} else {
+					self.audio.disable_music();
+				}
+				if self.setting.sound {
+					self.audio.enable_sound_effects();
+				} else {
+					self.audio.disable_sound_effects();
+				}
+			}
+			GameEvent::Esc => {
+				self.setting.show = false;
 			}
 			_ => (),
 		}
@@ -563,14 +612,10 @@ impl State {
 		}
 	}
 
-	fn paly_menu_sound(&self, event: &GameEvent) {
+	fn paly_menu_key_sound(&self, event: &GameEvent) {
 		if matches!(
 			event,
-			GameEvent::Up
-				| GameEvent::Down
-				| GameEvent::Enter
-				| GameEvent::Esc
-				| GameEvent::P
+			GameEvent::Up | GameEvent::Down | GameEvent::Enter | GameEvent::Esc
 		) {
 			self.audio.paly_menu_key_sound();
 		}
