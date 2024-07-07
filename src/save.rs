@@ -3,13 +3,11 @@ use std::{fs, path::PathBuf};
 use anyhow::Result;
 use directories::ProjectDirs;
 
-use crate::{
-	consts::APP_NAME,
-	state::{Screen, State},
-};
+use crate::consts::APP_NAME;
+
+const SAVE_FILE: &str = "save.txt";
 
 pub struct Save {
-	dir: PathBuf,
 	file: PathBuf,
 	pub scores: Vec<u32>,
 	pub last_game: Option<LastGame>,
@@ -27,64 +25,30 @@ pub struct LastGame {
 }
 
 impl Save {
-	const FILE_NAME: &'static str = "save.txt";
-
-	pub fn new() -> Self {
+	pub fn try_new() -> Result<Self> {
 		let dir = if cfg!(feature = "_dev") {
 			PathBuf::from("./")
 		} else {
 			ProjectDirs::from("", "", APP_NAME)
-				.unwrap()
+				.ok_or(anyhow::anyhow!("failed to read save directory"))?
 				.config_dir()
 				.to_path_buf()
 		};
 
-		let file = dir.join(Self::FILE_NAME);
+		let file = dir.join(SAVE_FILE);
 
-		Self {
-			dir,
+		Ok(Self {
 			file,
 			scores: vec![0; 10],
 			last_game: None,
-		}
-	}
-
-	pub fn write(&self, state: &State) -> Result<()> {
-		let mut content = String::new();
-
-		content.push_str("#scores\n");
-
-		for score in &state.scores {
-			content.push_str(&format!("{}\n", score));
-		}
-
-		if state.screen == Screen::StartMenu && self.last_game.is_none() {
-			return Ok(());
-		}
-
-		if !state.is_game_over {
-			content.push_str(&state.board.serialize());
-			content.push_str(&state.bag.serialize());
-			content.push_str(&state.active_tm.serialize());
-			content.push_str(&state.preview_tm.serialize());
-			content.push_str(&format!(
-				"#level\n{}\n#score\n{}\n#lines\n{}\n#combo\n{}",
-				state.level, state.score, state.lines, state.combo
-			));
-		}
-
-		fs::write(&self.file, content)?;
-
-		Ok(())
+		})
 	}
 
 	pub fn read(&mut self) -> Result<()> {
 		use line_map::*;
 
 		if !self.file.exists() {
-			fs::create_dir_all(&self.dir)?;
-			fs::write(&self.file, "")?;
-			return Ok(());
+			anyhow::bail!("no save_v1 file");
 		}
 
 		let content = fs::read_to_string(&self.file)?;
@@ -112,18 +76,18 @@ impl Save {
 			let num = i + 1;
 
 			if SCORES.contains(&num) {
-				scores.push(line.parse::<u32>().unwrap());
+				scores.push(line.parse::<u32>().unwrap_or(0));
 			} else {
 				match num {
 					BOARD => board.push_str(line),
 					BAG => bag.push_str(line),
 					ACTIVE_TM => active_tm.push_str(line),
 					PREVIEW_TM => preview_tm.push_str(line),
-					LEVEL => level = line.parse::<u32>().unwrap(),
-					SCORE => score = line.parse::<u32>().unwrap(),
-					LINES => lines = line.parse::<u32>().unwrap(),
+					LEVEL => level = line.parse::<u32>().unwrap_or(1),
+					SCORE => score = line.parse::<u32>().unwrap_or(0),
+					LINES => lines = line.parse::<u32>().unwrap_or(0),
 					COMBO => {
-						combo = line.parse::<i32>().unwrap();
+						combo = line.parse::<i32>().unwrap_or(-1);
 						last_game_read = true;
 					}
 					_ => (),

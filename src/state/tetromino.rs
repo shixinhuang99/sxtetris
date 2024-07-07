@@ -2,7 +2,7 @@ use super::{
 	point::{Point, Points},
 	tetromino_type::TetrominoType,
 };
-use crate::consts::BOARD_VISIBLE_ROWS;
+use crate::{consts::BOARD_VISIBLE_ROWS, save_v2::Saveable};
 
 const BOARD_VISIBLE_ROWS_I32: i32 = BOARD_VISIBLE_ROWS as i32;
 
@@ -52,6 +52,7 @@ pub struct Tetromino {
 	pub tm_type: TetrominoType,
 	pub points: Points,
 	pub rotate_deg: RotateDeg,
+	is_preview: bool,
 }
 
 impl Tetromino {
@@ -59,6 +60,7 @@ impl Tetromino {
 		let mut tm = Self::new_preview(tm_type);
 
 		tm.points.update(|p| p.1 += BOARD_VISIBLE_ROWS_I32);
+		tm.is_preview = false;
 
 		tm
 	}
@@ -72,6 +74,7 @@ impl Tetromino {
 			tm_type,
 			points,
 			rotate_deg: RotateDeg::Zero,
+			is_preview: true,
 		}
 	}
 
@@ -267,21 +270,7 @@ impl Tetromino {
 		self.points == other.points
 	}
 
-	pub fn serialize(&self) -> String {
-		let mut content = String::from("#tetromino\n");
-
-		content.push(self.tm_type.into());
-
-		for p in &self.points.value {
-			content.push_str(&format!(" {} {}", p.0, p.1));
-		}
-
-		content.push_str(&format!(" {}\n", usize::from(self.rotate_deg)));
-
-		content
-	}
-
-	pub fn deserialize(&mut self, source: &str) {
+	pub fn read_save_v1(&mut self, source: &str) {
 		let chunks: Vec<&str> = source.split_ascii_whitespace().collect();
 
 		if chunks.len() != 10 {
@@ -289,13 +278,53 @@ impl Tetromino {
 		}
 
 		self.tm_type = TetrominoType::from(chunks[0].chars().next().unwrap());
+		self.rotate_deg =
+			RotateDeg::from(chunks[9].parse::<usize>().unwrap_or(0));
+
+		let mut points = self.points.clone();
 
 		for (i, point) in chunks[1..9].chunks(2).enumerate() {
-			self.points.value[i].0 = point[0].parse::<i32>().unwrap();
-			self.points.value[i].1 = point[1].parse::<i32>().unwrap();
+			if let Ok(n) = point[0].parse::<i32>() {
+				points.value[i].0 = n;
+			} else {
+				return;
+			}
+			if let Ok(n) = point[1].parse::<i32>() {
+				points.value[i].1 = n;
+			} else {
+				return;
+			}
 		}
 
-		self.rotate_deg = RotateDeg::from(chunks[9].parse::<usize>().unwrap());
+		self.points.clone_from(&points);
+	}
+}
+
+impl Saveable for Tetromino {
+	fn get_key(&self) -> &'static str {
+		if self.is_preview {
+			"preview_tetromino"
+		} else {
+			"active_tetromino"
+		}
+	}
+
+	fn get_content(&self) -> String {
+		let mut content = String::new();
+
+		content.push(self.tm_type.into());
+
+		for p in &self.points.value {
+			content.push_str(&format!(" {} {}", p.0, p.1));
+		}
+
+		content.push_str(&format!(" {}", usize::from(self.rotate_deg)));
+
+		content
+	}
+
+	fn read_content(&mut self, content: &str) {
+		self.read_save_v1(content);
 	}
 }
 

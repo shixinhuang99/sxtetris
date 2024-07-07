@@ -13,16 +13,9 @@ pub fn scores(f: &mut Frame, state: &State) {
 
 	let lines: Vec<Line> = state
 		.scores
-		.iter()
-		.enumerate()
-		.map(|(i, score)| {
-			let s = if i >= 9 {
-				format!("{}.{:>11}", i + 1, score)
-			} else {
-				format!("{}.{:>12}", i + 1, score)
-			};
-			Line::raw(s)
-		})
+		.to_strings()
+		.into_iter()
+		.map(Line::raw)
 		.collect();
 
 	let text = BigText::builder()

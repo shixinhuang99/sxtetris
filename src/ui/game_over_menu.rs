@@ -12,9 +12,9 @@ use super::{
 };
 use crate::state::State;
 
-pub fn game_over_menu(f: &mut Frame, state: &State) {
-	let new_score_idx = state.scores.iter().position(|s| *s == state.score);
-	let (width_offest, height_offest) = if new_score_idx.is_some() {
+pub fn game_over_menu(f: &mut Frame, state: &mut State) {
+	let new_score = state.scores.take_new_score();
+	let (width_offest, height_offest) = if new_score.is_some() {
 		(8, 10)
 	} else {
 		(0, 0)
@@ -24,18 +24,18 @@ pub fn game_over_menu(f: &mut Frame, state: &State) {
 
 	let mut constraints = vec![Constraint::Length(4), Constraint::Length(16)];
 
-	if new_score_idx.is_some() {
+	if new_score.is_some() {
 		constraints.insert(1, Constraint::Length(6));
 	}
 
 	let chunk = Layout::vertical(constraints).spacing(3).split(popup);
 
-	if let Some(idx) = new_score_idx {
+	if let Some(score) = new_score {
 		let new_score_block = rounded_block().title("NEW SCORE");
 		let new_score_block_inner = new_score_block.inner(chunk[1]);
 		let score = BigText::builder()
 			.pixel_size(PixelSize::Quadrant)
-			.lines([Line::raw(format!("{}.{:>11}", idx + 1, state.score))])
+			.lines([Line::raw(score)])
 			.style(Style::new().fg(Color::Green))
 			.build()
 			.unwrap();

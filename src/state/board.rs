@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use super::{confetti::ConfettiState, point::Points, Tetromino, TetrominoType};
+use crate::save_v2::Saveable;
 
 pub struct BoardState {
 	pub board: VecDeque<Vec<TetrominoType>>,
@@ -151,20 +152,7 @@ impl BoardState {
 		}
 	}
 
-	pub fn serialize(&self) -> String {
-		let mut content = String::from("#board\n");
-
-		for rows in &self.board {
-			for tm_type in rows {
-				content.push(char::from(*tm_type));
-			}
-		}
-		content.push('\n');
-
-		content
-	}
-
-	pub fn deserialize(&mut self, source: &str) {
+	pub fn read_save_v1(&mut self, source: &str) {
 		let mut y = 0;
 		let mut x = 0;
 
@@ -176,5 +164,27 @@ impl BoardState {
 				y += 1;
 			}
 		}
+	}
+}
+
+impl Saveable for BoardState {
+	fn get_key(&self) -> &'static str {
+		"board"
+	}
+
+	fn get_content(&self) -> String {
+		let mut content = String::new();
+
+		for rows in &self.board {
+			for tm_type in rows {
+				content.push(char::from(*tm_type));
+			}
+		}
+
+		content
+	}
+
+	fn read_content(&mut self, content: &str) {
+		self.read_save_v1(content);
 	}
 }

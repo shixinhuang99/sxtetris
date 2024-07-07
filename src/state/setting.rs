@@ -8,6 +8,8 @@ mod setting_menu_idx {
 
 use setting_menu_idx::*;
 
+use crate::save_v2::Saveable;
+
 pub struct Setting {
 	pub menu: ListState,
 	pub show: bool,
@@ -31,46 +33,58 @@ impl Setting {
 		match self.menu.cursor {
 			PARTICLES => {
 				self.particles = !self.particles;
-				self.menu.items[PARTICLES] = if self.particles {
-					"PARTICLES: ON"
-				} else {
-					"PARTICLES: OFF"
-				};
+				self.menu.items[self.menu.cursor] =
+					setting_text("PARTICLES", self.particles);
 			}
 			MUSIC => {
 				self.music = !self.music;
-				self.menu.items[MUSIC] = if self.music {
-					"MUSIC: ON"
-				} else {
-					"MUSIC: OFF"
-				};
+				self.menu.items[self.menu.cursor] =
+					setting_text("MUSIC", self.music);
 			}
 			SOUND => {
 				self.sound = !self.sound;
-				self.menu.items[SOUND] = if self.sound {
-					"SOUND: ON"
-				} else {
-					"SOUND: OFF"
-				};
+				self.menu.items[self.menu.cursor] =
+					setting_text("SOUND", self.sound);
 			}
 			_ => (),
 		}
 	}
+}
 
-	fn _serialize(&self) -> String {
+impl Saveable for Setting {
+	fn get_key(&self) -> &'static str {
+		"setting"
+	}
+
+	fn get_content(&self) -> String {
 		format!(
-			"#setting\n{}{}{}\n",
+			"{}{}{}",
 			self.particles as u8, self.music as u8, self.sound as u8
 		)
 	}
 
-	fn _deserialize(&mut self, source: &str) {
-		let chars: Vec<char> = source.chars().collect();
-		if chars.len() < 3 {
+	fn read_content(&mut self, content: &str) {
+		let chars: Vec<char> = content.chars().collect();
+		if chars.len() != 3 {
 			return;
 		}
 		self.particles = chars[0] == '1';
+		self.menu.items[0] = setting_text("PARTICLES", self.particles);
 		self.music = chars[1] == '1';
+		self.menu.items[1] = setting_text("MUSIC", self.music);
 		self.sound = chars[2] == '1';
+		self.menu.items[2] = setting_text("SOUND", self.sound);
 	}
+}
+
+fn setting_text(k: &str, v: bool) -> String {
+	format!(
+		"{}: {}",
+		k,
+		if v {
+			"ON"
+		} else {
+			"OFF"
+		}
+	)
 }

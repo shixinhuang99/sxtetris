@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use crate::{
 	handler::{GameEvent, MainHandler},
-	save::Save,
+	save_v2::Save,
 	state::State,
 	term::Term,
 	ui::ui,
@@ -12,20 +12,15 @@ pub struct App {
 	term: Term,
 	handler: MainHandler,
 	state: State,
-	save: Save,
+	save: Option<Save>,
 }
 
 impl App {
 	pub fn new() -> Result<Self> {
-		let mut save = Save::new();
-
-		save.read()?;
-
 		let term = Term::new()?;
 		let handler = MainHandler::new();
-		let mut state = State::new(handler.create_sub_handler());
-
-		state.read_save(&save);
+		let state = State::new(handler.create_sub_handler());
+		let save = Save::try_new().ok();
 
 		Ok(Self {
 			term,
@@ -37,6 +32,12 @@ impl App {
 
 	pub async fn run(&mut self) -> Result<()> {
 		self.term.init()?;
+
+		if let Some(save) = &mut self.save {
+			let _ = save.read(&mut self.state);
+		}
+
+		self.state.check_setting();
 
 		while let Some(event) = self.handler.recv().await {
 			if event == GameEvent::CtrlC {
@@ -60,7 +61,9 @@ impl App {
 
 		self.state.audio.stop_all();
 
-		self.save.write(&self.state)?;
+		if let Some(save) = &self.save {
+			let _ = save.write(self.state.get_saveables_for_write());
+		}
 
 		self.term.exit()?;
 

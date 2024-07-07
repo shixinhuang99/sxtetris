@@ -23,10 +23,8 @@ pub struct Audio {
 
 impl Audio {
 	pub fn new() -> Self {
-		let inner = AudioInner::new().ok();
-
 		Self {
-			inner,
+			inner: AudioInner::new().ok(),
 			music_enable: false,
 			sound_enable: true,
 		}
@@ -180,45 +178,45 @@ impl AudioInner {
 			Decoder::new_mp3(Cursor::new(BG_MUSIC_BYTES))?
 				.amplify(0.7)
 				.repeat_infinite();
-		let bg_music_sink = Sink::try_new(&_handle)?;
+		let bg_music_sound = Sink::try_new(&_handle)?;
 
 		let menu_sound_source =
 			Decoder::new_wav(Cursor::new(MENU_SOUND_BYTES))?.buffered();
-		let menu_sink = Sink::try_new(&_handle)?;
+		let menu_sound = Sink::try_new(&_handle)?;
 
 		let move_sound_source =
 			Decoder::new_wav(Cursor::new(MOVE_SOUND_BYTES))?
 				.amplify(3.0)
 				.buffered();
-		let move_sink = Sink::try_new(&_handle)?;
+		let move_sound = Sink::try_new(&_handle)?;
 
 		let lock_sound_source =
 			Decoder::new_wav(Cursor::new(LOCK_SOUND_BYTES))?.buffered();
-		let lock_sink = Sink::try_new(&_handle)?;
+		let lock_sound = Sink::try_new(&_handle)?;
 
 		let clear_sound_source =
 			Decoder::new_mp3(Cursor::new(CLEAR_SOUND_BYTES))?.buffered();
-		let clear_sink = Sink::try_new(&_handle)?;
+		let clear_sound = Sink::try_new(&_handle)?;
 
 		let game_over_sound_source =
 			Decoder::new_wav(Cursor::new(GAME_OVER_SOUND_BYTES))?.buffered();
-		let game_over_sink = Sink::try_new(&_handle)?;
+		let game_over_sound = Sink::try_new(&_handle)?;
 
 		Ok(Self {
 			_stream,
 			_handle,
 			bg_music_sound_source,
-			bg_music_sound: bg_music_sink,
+			bg_music_sound,
 			menu_sound_source,
-			menu_sound: menu_sink,
+			menu_sound,
 			move_sound_source,
-			move_sound: move_sink,
+			move_sound,
 			lock_sound_source,
-			lock_sound: lock_sink,
+			lock_sound,
 			clear_sound_source,
-			clear_sound: clear_sink,
+			clear_sound,
 			game_over_sound_source,
-			game_over_sound: game_over_sink,
+			game_over_sound,
 		})
 	}
 }

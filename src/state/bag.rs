@@ -1,4 +1,5 @@
 use super::TetrominoType;
+use crate::save_v2::Saveable;
 
 pub struct Bag {
 	tm_types: [TetrominoType; 7],
@@ -57,19 +58,7 @@ impl Bag {
 		self.last = None;
 	}
 
-	pub fn serialize(&self) -> String {
-		let mut content = String::from("#bag\n");
-
-		for tm_type in &self.tm_types {
-			content.push(char::from(*tm_type));
-		}
-
-		content.push_str(&format!(" {}\n", self.cursor));
-
-		content
-	}
-
-	pub fn deserialize(&mut self, source: &str) {
+	pub fn read_save_v1(&mut self, source: &str) {
 		let chunks: Vec<&str> = source.split_ascii_whitespace().collect();
 
 		if chunks.len() != 2 {
@@ -80,6 +69,28 @@ impl Bag {
 			self.tm_types[i] = TetrominoType::from(ch);
 		}
 
-		self.cursor = chunks[1].parse::<usize>().unwrap();
+		self.cursor = chunks[1].parse::<usize>().unwrap_or(0);
+	}
+}
+
+impl Saveable for Bag {
+	fn get_key(&self) -> &'static str {
+		"bag"
+	}
+
+	fn get_content(&self) -> String {
+		let mut content = String::new();
+
+		for tm_type in &self.tm_types {
+			content.push(char::from(*tm_type));
+		}
+
+		content.push_str(&format!(" {}", self.cursor));
+
+		content
+	}
+
+	fn read_content(&mut self, content: &str) {
+		self.read_save_v1(content);
 	}
 }

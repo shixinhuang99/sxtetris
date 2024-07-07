@@ -40,15 +40,15 @@ pub fn sidebar(
 
 	let chunks_1 = create_text_chunks(vertical_chunks[1]);
 	render_text(f, "SCORE".to_string(), chunks_1[0], Color::Blue);
-	render_text(f, state.score.to_string(), chunks_1[1], Color::White);
+	render_text(f, state.stats.score.to_string(), chunks_1[1], Color::White);
 
 	let chunks_2 = create_text_chunks(vertical_chunks[2]);
 	render_text(f, "LEVEL".to_string(), chunks_2[0], Color::Blue);
-	render_text(f, state.level.to_string(), chunks_2[1], Color::White);
+	render_text(f, state.stats.level.to_string(), chunks_2[1], Color::White);
 
 	let chunks_3 = create_text_chunks(vertical_chunks[3]);
 	render_text(f, "LINES".to_string(), chunks_3[0], Color::Blue);
-	render_text(f, state.lines.to_string(), chunks_3[1], Color::White);
+	render_text(f, state.stats.lines.to_string(), chunks_3[1], Color::White);
 }
 
 fn create_text_chunks(rect: Rect) -> [Rect; 2] {

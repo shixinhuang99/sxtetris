@@ -17,7 +17,7 @@ pub fn list(f: &mut Frame, rect: Rect, list_state: &ListState) {
 	for (i, item) in list_state.items.iter().enumerate() {
 		let title = BigText::builder()
 			.pixel_size(PixelSize::Quadrant)
-			.lines([Line::raw(*item)])
+			.lines([Line::raw(item)])
 			.style(
 				if i == list_state.cursor {
 					Style::new().light_yellow()
