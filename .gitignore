@@ -1,6 +1,5 @@
 .DS_Store
 /target
 /trace.log
-/save.txt
+/save.json
 /bugs.md
-/save_v2.txt
