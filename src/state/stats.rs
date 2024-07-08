@@ -1,5 +1,6 @@
-use crate::save_v2::Saveable;
+use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Stats {
 	pub level: u32,
 	pub score: u32,
@@ -51,35 +52,5 @@ impl Stats {
 		if self.combo > 0 {
 			self.score += 50 * self.combo as u32 * self.level;
 		}
-	}
-}
-
-impl Saveable for Stats {
-	fn get_key(&self) -> &'static str {
-		"stats"
-	}
-
-	fn get_content(&self) -> String {
-		let items = [
-			self.level.to_string(),
-			self.score.to_string(),
-			self.lines.to_string(),
-			self.combo.to_string(),
-		];
-
-		items.join(" ")
-	}
-
-	fn read_content(&mut self, content: &str) {
-		let chunks: Vec<&str> = content.split_ascii_whitespace().collect();
-
-		if chunks.len() != 4 {
-			return;
-		}
-
-		self.level = chunks[0].parse::<u32>().unwrap_or(1);
-		self.score = chunks[1].parse::<u32>().unwrap_or(0);
-		self.lines = chunks[2].parse::<u32>().unwrap_or(0);
-		self.combo = chunks[3].parse::<i32>().unwrap_or(-1);
 	}
 }

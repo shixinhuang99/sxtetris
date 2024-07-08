@@ -1,17 +1,12 @@
+use serde::{Deserialize, Serialize};
+
 use super::ListState;
 
-mod setting_menu_idx {
-	pub const PARTICLES: usize = 0;
-	pub const MUSIC: usize = 1;
-	pub const SOUND: usize = 2;
-}
-
-use setting_menu_idx::*;
-
-use crate::save_v2::Saveable;
-
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Setting {
+	#[serde(skip, default = "default_menu")]
 	pub menu: ListState,
+	#[serde(skip)]
 	pub show: bool,
 	pub particles: bool,
 	pub music: bool,
@@ -21,63 +16,45 @@ pub struct Setting {
 impl Setting {
 	pub fn new() -> Self {
 		Self {
-			menu: ListState::new(&["PARTICLES: ON", "MUSIC: OFF", "SOUND: ON"]),
+			menu: default_menu(),
 			show: false,
-			particles: true,
+			particles: false,
 			music: false,
-			sound: true,
+			sound: false,
 		}
 	}
 
 	pub fn handle_enter(&mut self) {
-		match self.menu.cursor {
+		use setting_menu_idx::*;
+
+		let cursor = self.menu.cursor;
+		match cursor {
 			PARTICLES => {
 				self.particles = !self.particles;
-				self.menu.items[self.menu.cursor] =
-					setting_text("PARTICLES", self.particles);
+				self.menu.items[cursor] = text("PARTICLES", self.particles);
 			}
 			MUSIC => {
 				self.music = !self.music;
-				self.menu.items[self.menu.cursor] =
-					setting_text("MUSIC", self.music);
+				self.menu.items[cursor] = text("MUSIC", self.music);
 			}
 			SOUND => {
 				self.sound = !self.sound;
-				self.menu.items[self.menu.cursor] =
-					setting_text("SOUND", self.sound);
+				self.menu.items[cursor] = text("SOUND", self.sound);
 			}
 			_ => (),
 		}
 	}
-}
 
-impl Saveable for Setting {
-	fn get_key(&self) -> &'static str {
-		"setting"
-	}
+	pub fn update_menu(&mut self) {
+		use setting_menu_idx::*;
 
-	fn get_content(&self) -> String {
-		format!(
-			"{}{}{}",
-			self.particles as u8, self.music as u8, self.sound as u8
-		)
-	}
-
-	fn read_content(&mut self, content: &str) {
-		let chars: Vec<char> = content.chars().collect();
-		if chars.len() != 3 {
-			return;
-		}
-		self.particles = chars[0] == '1';
-		self.menu.items[0] = setting_text("PARTICLES", self.particles);
-		self.music = chars[1] == '1';
-		self.menu.items[1] = setting_text("MUSIC", self.music);
-		self.sound = chars[2] == '1';
-		self.menu.items[2] = setting_text("SOUND", self.sound);
+		self.menu.items[PARTICLES] = text("PARTICLES", self.particles);
+		self.menu.items[MUSIC] = text("MUSIC", self.music);
+		self.menu.items[SOUND] = text("SOUND", self.sound);
 	}
 }
 
-fn setting_text(k: &str, v: bool) -> String {
+fn text(k: &str, v: bool) -> String {
 	format!(
 		"{}: {}",
 		k,
@@ -87,4 +64,14 @@ fn setting_text(k: &str, v: bool) -> String {
 			"OFF"
 		}
 	)
+}
+
+fn default_menu() -> ListState {
+	ListState::new(&["PARTICLES: OFF", "MUSIC: OFF", "SOUND: OFF"])
+}
+
+mod setting_menu_idx {
+	pub const PARTICLES: usize = 0;
+	pub const MUSIC: usize = 1;
+	pub const SOUND: usize = 2;
 }

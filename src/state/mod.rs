@@ -10,8 +10,9 @@ mod stats;
 mod tetromino;
 mod tetromino_type;
 
-use bag::Bag;
-use board::{BoardState, BoardStatus};
+pub use bag::Bag;
+pub use board::BoardState;
+use board::BoardStatus;
 pub use confetti::ConfettiState;
 use consts::{
 	game_over_menu_idx, pause_menu_idx, start_menu_idx, GAME_OVER_MENU_ITEMS,
@@ -19,18 +20,17 @@ use consts::{
 };
 pub use list::ListState;
 use point::Points;
-use scores::Scores;
-use setting::Setting;
-use stats::Stats;
-use tetromino::{Tetromino, TetrominoAction};
+pub use scores::Scores;
+pub use setting::Setting;
+pub use stats::Stats;
+pub use tetromino::Tetromino;
+use tetromino::TetrominoAction;
 pub use tetromino_type::TetrominoType;
 
 use crate::{
 	audio::Audio,
 	consts::{BOARD_COLS, BOARD_ROWS, PREVIEW_BOARD_COLS, PREVIEW_BOARD_ROWS},
 	handler::{is_locked, is_paused, GameEvent, SubHandler},
-	save::Save,
-	save_v2::Saveable,
 };
 
 const BOARD_ROWS_I32: i32 = BOARD_ROWS as i32;
@@ -563,21 +563,6 @@ impl State {
 			.is_collision_with_ignore(points, &self.active_tm.points)
 	}
 
-	pub fn read_save_v1(&mut self, save: &Save) {
-		self.scores.read_save_v1(&save.scores);
-		if let Some(last_game) = &save.last_game {
-			self.count_down = 3;
-			self.board.read_save_v1(&last_game.board);
-			self.bag.read_save_v1(&last_game.bag);
-			self.active_tm.read_save_v1(&last_game.active_tm);
-			self.preview_tm.read_save_v1(&last_game.preview_tm);
-			self.stats.level = last_game.level;
-			self.stats.score = last_game.score;
-			self.stats.lines = last_game.lines;
-			self.stats.combo = last_game.combo;
-		}
-	}
-
 	pub fn update_clear_rows_progress(&mut self) {
 		self.board.update_clear_rows_progress();
 		if self.board.status == BoardStatus::Done {
@@ -593,34 +578,5 @@ impl State {
 		) {
 			self.audio.paly_menu_key_sound();
 		}
-	}
-
-	pub fn get_saveables_for_write(&mut self) -> Vec<&dyn Saveable> {
-		let mut saveables: Vec<&dyn Saveable> =
-			vec![&self.setting, &self.scores];
-
-		if self.screen == Screen::StartMenu || self.is_game_over {
-			return saveables;
-		}
-
-		saveables.push(&self.board);
-		saveables.push(&self.bag);
-		saveables.push(&self.active_tm);
-		saveables.push(&self.preview_tm);
-		saveables.push(&self.stats);
-
-		saveables
-	}
-
-	pub fn get_saveables_for_read(&mut self) -> Vec<&mut dyn Saveable> {
-		vec![
-			&mut self.setting,
-			&mut self.scores,
-			&mut self.board,
-			&mut self.bag,
-			&mut self.active_tm,
-			&mut self.preview_tm,
-			&mut self.stats,
-		]
 	}
 }

@@ -1,3 +1,4 @@
+#[derive(Clone, Default)]
 pub struct ListState {
 	pub items: Vec<String>,
 	pub cursor: usize,

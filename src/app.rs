@@ -1,9 +1,9 @@
 use anyhow::Result;
 
 use crate::{
+	common::save::{LastGame, Save},
 	handler::{GameEvent, MainHandler},
-	save_v2::Save,
-	state::State,
+	state::{Screen, State},
 	term::Term,
 	ui::ui,
 };
@@ -33,9 +33,7 @@ impl App {
 	pub async fn run(&mut self) -> Result<()> {
 		self.term.init()?;
 
-		if let Some(save) = &mut self.save {
-			let _ = save.read(&mut self.state);
-		}
+		self.read_save();
 
 		self.state.check_setting();
 
@@ -61,12 +59,52 @@ impl App {
 
 		self.state.audio.stop_all();
 
-		if let Some(save) = &self.save {
-			let _ = save.write(self.state.get_saveables_for_write());
-		}
+		self.wirte_save();
 
 		self.term.exit()?;
 
 		Ok(())
+	}
+
+	fn read_save(&mut self) {
+		let Some(save) = &mut self.save else {
+			return;
+		};
+		if save.try_read().is_ok() {
+			self.state.scores.clone_from(&save.content.scores);
+			self.state.setting.clone_from(&save.content.settting);
+			self.state.setting.update_menu();
+			let Some(last_game) = &save.content.last_game else {
+				return;
+			};
+			self.state.count_down = 3;
+			self.state.board.board.clone_from(&last_game.board.board);
+			self.state.bag.clone_from(&last_game.bag);
+			self.state.stats.clone_from(&last_game.stats);
+			self.state.active_tm.clone_from(&last_game.active_tm);
+			self.state.preview_tm.clone_from(&last_game.preview_tm);
+		}
+	}
+
+	fn wirte_save(&mut self) {
+		let Some(save) = &mut self.save else {
+			return;
+		};
+		save.content.scores.clone_from(&self.state.scores);
+		save.content.settting.clone_from(&self.state.setting);
+		if self.state.screen == Screen::Game {
+			if self.state.is_game_over {
+				save.content.last_game = None;
+			} else {
+				save.content.last_game = Some(LastGame {
+					board: self.state.board.clone(),
+					bag: self.state.bag.clone(),
+					stats: self.state.stats.clone(),
+					active_tm: self.state.active_tm.clone(),
+					preview_tm: self.state.preview_tm.clone(),
+				});
+			}
+		}
+		let _ = save.try_write();
 	}
 }

@@ -1,10 +1,13 @@
-use super::TetrominoType;
-use crate::save_v2::Saveable;
+use serde::{Deserialize, Serialize};
 
+use super::TetrominoType;
+
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Bag {
 	tm_types: [TetrominoType; 7],
 	cursor: usize,
 	last: Option<TetrominoType>,
+	#[serde(skip)]
 	count: u8,
 }
 
@@ -56,41 +59,5 @@ impl Bag {
 	pub fn reset(&mut self) {
 		self.shuffle();
 		self.last = None;
-	}
-
-	pub fn read_save_v1(&mut self, source: &str) {
-		let chunks: Vec<&str> = source.split_ascii_whitespace().collect();
-
-		if chunks.len() != 2 {
-			return;
-		}
-
-		for (i, ch) in chunks[0].chars().enumerate() {
-			self.tm_types[i] = TetrominoType::from(ch);
-		}
-
-		self.cursor = chunks[1].parse::<usize>().unwrap_or(0);
-	}
-}
-
-impl Saveable for Bag {
-	fn get_key(&self) -> &'static str {
-		"bag"
-	}
-
-	fn get_content(&self) -> String {
-		let mut content = String::new();
-
-		for tm_type in &self.tm_types {
-			content.push(char::from(*tm_type));
-		}
-
-		content.push_str(&format!(" {}", self.cursor));
-
-		content
-	}
-
-	fn read_content(&mut self, content: &str) {
-		self.read_save_v1(content);
 	}
 }

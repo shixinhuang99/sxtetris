@@ -4,6 +4,7 @@ use ratatui::style::Color;
 
 use crate::consts::FRAME_RATE_SECS;
 
+#[derive(Clone)]
 pub struct Particle {
 	pub char: char,
 	pub color: Color,
@@ -52,19 +53,13 @@ fn random_color() -> Color {
 	fastrand::choice(COLORS).unwrap_or(COLORS[0])
 }
 
+#[derive(Clone, Default)]
 pub struct ConfettiState {
 	points: Vec<(usize, usize)>,
 	pub particles: Vec<Particle>,
 }
 
 impl ConfettiState {
-	pub fn new() -> Self {
-		Self {
-			points: Vec::new(),
-			particles: Vec::new(),
-		}
-	}
-
 	pub fn push_points(&mut self, x: usize, y: usize) {
 		self.points.push((x, y));
 	}

@@ -13,7 +13,7 @@ use super::{
 use crate::state::State;
 
 pub fn game_over_menu(f: &mut Frame, state: &mut State) {
-	let new_score = state.scores.take_new_score();
+	let new_score = state.scores.get_new_score();
 	let (width_offest, height_offest) = if new_score.is_some() {
 		(8, 10)
 	} else {
