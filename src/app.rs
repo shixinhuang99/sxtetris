@@ -1,8 +1,8 @@
 use anyhow::Result;
 
 use crate::{
-	common::save::{LastGame, Save},
 	handler::{GameEvent, MainHandler},
+	save::{LastGame, Save},
 	state::{Screen, State},
 	term::Term,
 	ui::ui,
