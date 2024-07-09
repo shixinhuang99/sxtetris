@@ -1,12 +1,13 @@
+#[derive(Clone, Default)]
 pub struct ListState {
-	pub items: Vec<&'static str>,
+	pub items: Vec<String>,
 	pub cursor: usize,
 }
 
 impl ListState {
-	pub fn new(items: &[&'static str]) -> Self {
+	pub fn new(items: &[&str]) -> Self {
 		Self {
-			items: Vec::from(items),
+			items: items.iter().map(|s| s.to_string()).collect(),
 			cursor: 0,
 		}
 	}

@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::consts::{BOARD_COLS, BOARD_ROWS, BOARD_VISIBLE_ROWS};
 
 const MAX_Y: i32 = BOARD_ROWS as i32 - 1;
@@ -6,7 +8,7 @@ const MIN_VISIBLE_Y: i32 = BOARD_VISIBLE_ROWS as i32;
 
 pub type Point = (i32, i32);
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Deserialize, Serialize)]
 pub struct Points {
 	pub value: [Point; 4],
 }

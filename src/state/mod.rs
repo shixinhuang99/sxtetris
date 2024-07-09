@@ -4,12 +4,15 @@ mod confetti;
 mod consts;
 mod list;
 mod point;
+mod scores;
 mod setting;
+mod stats;
 mod tetromino;
 mod tetromino_type;
 
-use bag::Bag;
-use board::{BoardState, BoardStatus};
+pub use bag::Bag;
+pub use board::BoardState;
+use board::BoardStatus;
 pub use confetti::ConfettiState;
 use consts::{
 	game_over_menu_idx, pause_menu_idx, start_menu_idx, GAME_OVER_MENU_ITEMS,
@@ -17,15 +20,17 @@ use consts::{
 };
 pub use list::ListState;
 use point::Points;
-use setting::Setting;
-use tetromino::{Tetromino, TetrominoAction};
+pub use scores::Scores;
+pub use setting::Setting;
+pub use stats::Stats;
+pub use tetromino::Tetromino;
+use tetromino::TetrominoAction;
 pub use tetromino_type::TetrominoType;
 
 use crate::{
 	audio::Audio,
 	consts::{BOARD_COLS, BOARD_ROWS, PREVIEW_BOARD_COLS, PREVIEW_BOARD_ROWS},
 	handler::{is_locked, is_paused, GameEvent, SubHandler},
-	save::Save,
 };
 
 const BOARD_ROWS_I32: i32 = BOARD_ROWS as i32;
@@ -51,11 +56,8 @@ pub struct State {
 	pub active_tm: Tetromino,
 	ghost_tm: Tetromino,
 	pub preview_tm: Tetromino,
-	pub level: u32,
-	pub score: u32,
-	pub lines: u32,
-	pub combo: i32,
-	pub scores: Vec<u32>,
+	pub stats: Stats,
+	pub scores: Scores,
 	pub show_scores: bool,
 	pub is_game_over: bool,
 	pub count_down: u8,
@@ -84,11 +86,8 @@ impl State {
 			active_tm: Tetromino::new(TetrominoType::None),
 			preview_tm: Tetromino::new_preview(TetrominoType::None),
 			ghost_tm: Tetromino::new(TetrominoType::Ghost),
-			level: 1,
-			score: 0,
-			lines: 0,
-			combo: -1,
-			scores: vec![0; 10],
+			stats: Stats::new(),
+			scores: Scores::new(),
 			show_scores: false,
 			is_game_over: false,
 			count_down: 0,
@@ -326,25 +325,29 @@ impl State {
 			}
 			GameEvent::Enter => {
 				self.setting.handle_enter();
-				self.board.confetti_enable = self.setting.particles;
-				if self.setting.music {
-					self.audio.enable_music();
-					if self.screen == Screen::Game {
-						self.audio.play_bg_music();
-					}
-				} else {
-					self.audio.disable_music();
-				}
-				if self.setting.sound {
-					self.audio.enable_sound_effects();
-				} else {
-					self.audio.disable_sound_effects();
-				}
+				self.check_setting();
 			}
 			GameEvent::Esc => {
 				self.setting.show = false;
 			}
 			_ => (),
+		}
+	}
+
+	pub fn check_setting(&mut self) {
+		self.board.confetti_enable = self.setting.particles;
+		if self.setting.music {
+			self.audio.enable_music();
+			if self.screen == Screen::Game {
+				self.audio.play_bg_music();
+			}
+		} else {
+			self.audio.disable_music();
+		}
+		if self.setting.sound {
+			self.audio.enable_sound_effects();
+		} else {
+			self.audio.disable_sound_effects();
 		}
 	}
 
@@ -366,10 +369,7 @@ impl State {
 		self.board.reset();
 		self.preview_board.reset();
 		self.bag.reset();
-		self.level = 1;
-		self.score = 0;
-		self.lines = 0;
-		self.combo = -1;
+		self.stats.reset();
 		self.pause_menu.reset();
 		self.game_over_menu.reset();
 		self.is_game_over = false;
@@ -394,9 +394,7 @@ impl State {
 		self.handler.pause();
 		self.handler.cancel_grvity();
 		self.handler.cancel_lock();
-		self.scores.push(self.score);
-		self.scores.sort_unstable_by(|a, b| b.cmp(a));
-		self.scores.truncate(10);
+		self.scores.push_new_score(self.stats.score);
 
 		self.audio.stop_bg_music();
 		self.audio.paly_game_over_sound();
@@ -407,7 +405,13 @@ impl State {
 
 		let cleard_rows_len = self.board.check_need_cleared_rows();
 
-		self.update_stats(cleard_rows_len);
+		let previous_level = self.stats.level;
+
+		self.stats.update(cleard_rows_len);
+
+		if self.stats.level > previous_level {
+			self.handler.change_level(self.stats.level);
+		}
 
 		if cleard_rows_len > 0 {
 			self.audio.paly_line_clear_sound();
@@ -468,11 +472,11 @@ impl State {
 			self.board.update_area(&self.active_tm);
 
 			if tm_action == TetrominoAction::SoftDrop {
-				self.score += 1;
+				self.stats.score += 1;
 			}
 
 			if tm_action == TetrominoAction::HardDrop {
-				self.score += distance as u32 * 2;
+				self.stats.score += distance as u32 * 2;
 				self.handler.cancel_lock();
 				self.pre_gen_next_tm();
 				return;
@@ -557,51 +561,6 @@ impl State {
 	fn is_collision_ignore_self(&self, points: &Points) -> bool {
 		self.board
 			.is_collision_with_ignore(points, &self.active_tm.points)
-	}
-
-	fn update_stats(&mut self, rows_len: usize) {
-		let previous_level = self.level;
-
-		if rows_len > 0 {
-			self.lines += rows_len as u32;
-
-			let new_level = self.lines / 10 + 1;
-
-			if new_level > previous_level {
-				self.level = new_level;
-				self.handler.change_level(self.level);
-			}
-
-			let base_score = match rows_len {
-				1 => 100,
-				2 => 300,
-				3 => 500,
-				4 => 800,
-				_ => 0,
-			};
-			self.score += base_score * self.level;
-			self.combo += 1;
-		} else {
-			self.combo = -1;
-		}
-		if self.combo > 0 {
-			self.score += 50 * self.combo as u32 * self.level;
-		}
-	}
-
-	pub fn read_save(&mut self, save: &Save) {
-		self.scores.clone_from(&save.scores);
-		if let Some(last_game) = &save.last_game {
-			self.count_down = 3;
-			self.board.deserialize(&last_game.board);
-			self.bag.deserialize(&last_game.bag);
-			self.active_tm.deserialize(&last_game.active_tm);
-			self.preview_tm.deserialize(&last_game.preview_tm);
-			self.level = last_game.level;
-			self.score = last_game.score;
-			self.lines = last_game.lines;
-			self.combo = last_game.combo;
-		}
 	}
 
 	pub fn update_clear_rows_progress(&mut self) {

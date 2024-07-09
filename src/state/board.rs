@@ -1,20 +1,31 @@
 use std::collections::VecDeque;
 
+use serde::{Deserialize, Serialize};
+
 use super::{confetti::ConfettiState, point::Points, Tetromino, TetrominoType};
 
+#[derive(Clone, Deserialize, Serialize)]
 pub struct BoardState {
 	pub board: VecDeque<Vec<TetrominoType>>,
+	#[serde(skip)]
 	pub rows: usize,
+	#[serde(skip)]
 	pub cols: usize,
+	#[serde(skip)]
 	cleared_rows: Vec<usize>,
+	#[serde(skip)]
 	col_cursor: usize,
+	#[serde(skip)]
 	pub status: BoardStatus,
+	#[serde(skip)]
 	pub confetti: ConfettiState,
+	#[serde(skip)]
 	pub confetti_enable: bool,
 }
 
-#[derive(PartialEq)]
+#[derive(Clone, PartialEq, Default)]
 pub enum BoardStatus {
+	#[default]
 	None,
 	Pending,
 	Done,
@@ -30,8 +41,8 @@ impl BoardState {
 			cols,
 			cleared_rows: Vec::new(),
 			col_cursor: 0,
-			status: BoardStatus::None,
-			confetti: ConfettiState::new(),
+			status: BoardStatus::default(),
+			confetti: ConfettiState::default(),
 			confetti_enable: true,
 		}
 	}
@@ -148,33 +159,6 @@ impl BoardState {
 		}
 		if self.status == BoardStatus::Done {
 			self.push_new_rows();
-		}
-	}
-
-	pub fn serialize(&self) -> String {
-		let mut content = String::from("#board\n");
-
-		for rows in &self.board {
-			for tm_type in rows {
-				content.push(char::from(*tm_type));
-			}
-		}
-		content.push('\n');
-
-		content
-	}
-
-	pub fn deserialize(&mut self, source: &str) {
-		let mut y = 0;
-		let mut x = 0;
-
-		for ch in source.chars() {
-			self.board[y][x] = TetrominoType::from(ch);
-			x += 1;
-			if x > 9 {
-				x = 0;
-				y += 1;
-			}
 		}
 	}
 }

@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use super::{
 	point::{Point, Points},
 	tetromino_type::TetrominoType,
@@ -16,7 +18,7 @@ pub enum TetrominoAction {
 	RotateLeft,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Deserialize, Serialize)]
 pub enum RotateDeg {
 	Zero,
 	R,
@@ -47,7 +49,7 @@ impl From<RotateDeg> for usize {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Tetromino {
 	pub tm_type: TetrominoType,
 	pub points: Points,
@@ -265,37 +267,6 @@ impl Tetromino {
 
 	pub fn same_position(&self, other: &Self) -> bool {
 		self.points == other.points
-	}
-
-	pub fn serialize(&self) -> String {
-		let mut content = String::from("#tetromino\n");
-
-		content.push(self.tm_type.into());
-
-		for p in &self.points.value {
-			content.push_str(&format!(" {} {}", p.0, p.1));
-		}
-
-		content.push_str(&format!(" {}\n", usize::from(self.rotate_deg)));
-
-		content
-	}
-
-	pub fn deserialize(&mut self, source: &str) {
-		let chunks: Vec<&str> = source.split_ascii_whitespace().collect();
-
-		if chunks.len() != 10 {
-			return;
-		}
-
-		self.tm_type = TetrominoType::from(chunks[0].chars().next().unwrap());
-
-		for (i, point) in chunks[1..9].chunks(2).enumerate() {
-			self.points.value[i].0 = point[0].parse::<i32>().unwrap();
-			self.points.value[i].1 = point[1].parse::<i32>().unwrap();
-		}
-
-		self.rotate_deg = RotateDeg::from(chunks[9].parse::<usize>().unwrap());
 	}
 }
 

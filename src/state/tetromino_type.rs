@@ -1,8 +1,9 @@
 use ratatui::style::Color;
+use serde::{Deserialize, Serialize};
 
 use super::point::Point;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Deserialize, Serialize)]
 pub enum TetrominoType {
 	I,
 	/// ```

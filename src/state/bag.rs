@@ -1,9 +1,13 @@
+use serde::{Deserialize, Serialize};
+
 use super::TetrominoType;
 
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Bag {
 	tm_types: [TetrominoType; 7],
 	cursor: usize,
 	last: Option<TetrominoType>,
+	#[serde(skip)]
 	count: u8,
 }
 
@@ -55,31 +59,5 @@ impl Bag {
 	pub fn reset(&mut self) {
 		self.shuffle();
 		self.last = None;
-	}
-
-	pub fn serialize(&self) -> String {
-		let mut content = String::from("#bag\n");
-
-		for tm_type in &self.tm_types {
-			content.push(char::from(*tm_type));
-		}
-
-		content.push_str(&format!(" {}\n", self.cursor));
-
-		content
-	}
-
-	pub fn deserialize(&mut self, source: &str) {
-		let chunks: Vec<&str> = source.split_ascii_whitespace().collect();
-
-		if chunks.len() != 2 {
-			return;
-		}
-
-		for (i, ch) in chunks[0].chars().enumerate() {
-			self.tm_types[i] = TetrominoType::from(ch);
-		}
-
-		self.cursor = chunks[1].parse::<usize>().unwrap();
 	}
 }
