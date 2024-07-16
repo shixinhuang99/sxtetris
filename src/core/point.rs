@@ -1,17 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct Point {
-	pub x: i8,
-	pub y: i8,
+pub struct Point<T> {
+	pub x: T,
+	pub y: T,
 }
 
-pub struct BoardPoint {
-	pub x: usize,
-	pub y: usize,
-}
-
-impl Point {
+impl Point<i8> {
 	pub const fn new(raw_point: (i8, i8)) -> Self {
 		Self {
 			x: raw_point.0,
@@ -19,13 +14,13 @@ impl Point {
 		}
 	}
 
-	pub fn to_board_point(&self) -> BoardPoint {
+	pub fn to_usize_point(&self) -> Point<usize> {
 		self.clone().into()
 	}
 }
 
-impl From<Point> for BoardPoint {
-	fn from(value: Point) -> Self {
+impl From<Point<i8>> for Point<usize> {
+	fn from(value: Point<i8>) -> Self {
 		Self {
 			x: value.x as usize,
 			y: value.y as usize,

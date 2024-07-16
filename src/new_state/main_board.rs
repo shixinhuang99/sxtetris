@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use super::tetromino::Tetromino;
 use crate::{
 	consts::{MAIN_BOARD_COLS, MAIN_BOARD_ROWS},
-	core::{position::Position, tetromino_kind::TetrominoKind, Board},
+	core::{Board, Position, TetrominoKind},
 };
 
 pub struct MainBoard {
@@ -23,14 +23,14 @@ impl MainBoard {
 	}
 
 	pub fn lock_tetromino(&mut self, tetromino: &Tetromino) {
-		for p in tetromino.position.to_board_points() {
+		for p in tetromino.position.to_usize_points() {
 			self.cells[p.y][p.x] = Some(tetromino.kind);
 		}
 	}
 
 	pub fn is_collision(&self, position: &Position) -> bool {
 		position
-			.to_board_points()
+			.to_usize_points()
 			.iter()
 			.any(|p| self.cells[p.y][p.x].is_some())
 	}

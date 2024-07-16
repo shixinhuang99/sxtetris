@@ -1,4 +1,4 @@
-use crate::core::tetromino_kind::TetrominoKind;
+use crate::core::TetrominoKind;
 
 pub struct Bag {
 	kinds: [TetrominoKind; 7],

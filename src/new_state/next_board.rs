@@ -1,6 +1,6 @@
 use crate::{
 	consts::{NEXT_BOARD_COLS, NEXT_BOARD_ROWS},
-	core::{tetromino_kind::TetrominoKind, Board},
+	core::{Board, TetrominoKind},
 };
 
 pub struct NextBoard {
@@ -20,7 +20,7 @@ impl NextBoard {
 		let mut position = next.init_position(0);
 		position.update(|p| p.x += 3);
 
-		for p in position.to_board_points() {
+		for p in position.to_usize_points() {
 			self.cells[p.y][p.x] = Some(next);
 		}
 	}

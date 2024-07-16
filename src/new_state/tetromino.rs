@@ -1,34 +1,41 @@
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
-use super::main_board::MainBoard;
+use super::MainBoard;
 use crate::{
 	consts::MAIN_BOARD_BUFFER_ROWS,
-	core::{position::Position, tetromino_kind::TetrominoKind},
+	core::{Position, TetrominoKind},
 };
 
 pub struct Tetromino {
 	pub kind: TetrominoKind,
 	pub position: Position,
+	pub blink: bool,
 	orientation: Orientation,
-	board: Rc<MainBoard>,
+	board: Rc<RefCell<MainBoard>>,
 }
 
 impl Tetromino {
-	pub fn new(kind: TetrominoKind, board: Rc<MainBoard>) -> Self {
-		let orientation = Orientation::N;
-		let mut position = kind.init_position(orientation.into());
+	pub fn new(board: Rc<RefCell<MainBoard>>) -> Self {
+		Self {
+			kind: TetrominoKind::I,
+			position: Position::default(),
+			blink: false,
+			orientation: Orientation::N,
+			board,
+		}
+	}
 
-		position.update(|p| {
+	pub fn into_new(self, kind: TetrominoKind) -> Self {
+		let mut tetromino = Tetromino::new(self.board);
+
+		tetromino.kind = kind;
+		tetromino.position = kind.init_position(Orientation::N.into());
+		tetromino.position.update(|p| {
 			p.x += 3;
 			p.y += MAIN_BOARD_BUFFER_ROWS as i8;
 		});
 
-		Self {
-			kind,
-			position,
-			orientation,
-			board,
-		}
+		tetromino
 	}
 
 	fn walk(&mut self, action: &TetrominoAction) {
@@ -62,7 +69,7 @@ impl Tetromino {
 			_ => unreachable!(),
 		};
 
-		if !moved || self.board.is_collision(&position) {
+		if !moved || self.board.borrow().is_collision(&position) {
 			return;
 		}
 
@@ -99,7 +106,7 @@ impl Tetromino {
 		let rotate_position = init_position + diff;
 
 		if rotate_position.is_outside_the_board()
-			|| self.board.is_collision(&rotate_position)
+			|| self.board.borrow().is_collision(&rotate_position)
 		{
 			let kick_offest = match (&self.orientation, next_orientation) {
 				(N, E) => {
@@ -165,7 +172,7 @@ impl Tetromino {
 				let kick_position = rotate_position.clone() + offest;
 
 				if kick_position.is_outside_the_board()
-					|| self.board.is_collision(&kick_position)
+					|| self.board.borrow().is_collision(&kick_position)
 				{
 					continue;
 				}

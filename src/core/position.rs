@@ -6,7 +6,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use super::point::{BoardPoint, Point};
+use super::point::Point;
 use crate::consts::{MAIN_BOARD_BUFFER_ROWS, MAIN_BOARD_COLS, MAIN_BOARD_ROWS};
 
 const MAX_Y: i8 = MAIN_BOARD_ROWS as i8 - 1;
@@ -15,7 +15,7 @@ const MIN_Y: i8 = MAIN_BOARD_BUFFER_ROWS as i8;
 
 #[derive(Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(transparent)]
-pub struct Position([Point; 4]);
+pub struct Position([Point<i8>; 4]);
 
 impl Position {
 	pub const fn new(raw_points: [(i8, i8); 4]) -> Self {
@@ -27,15 +27,15 @@ impl Position {
 		])
 	}
 
-	pub fn iter(&self) -> Iter<Point> {
+	pub fn iter(&self) -> Iter<Point<i8>> {
 		self.0.iter()
 	}
 
-	pub fn into_iter(self) -> IntoIter<Point, 4> {
+	pub fn into_iter(self) -> IntoIter<Point<i8>, 4> {
 		self.0.into_iter()
 	}
 
-	pub fn update<F: FnMut(&mut Point)>(&mut self, f: F) {
+	pub fn update<F: FnMut(&mut Point<i8>)>(&mut self, f: F) {
 		self.0.iter_mut().for_each(f);
 	}
 
@@ -63,8 +63,8 @@ impl Position {
 			.any(|p| p.x < 0 || p.x > MAX_X || p.y < MIN_Y || p.y > MAX_Y)
 	}
 
-	pub fn to_board_points(&self) -> Vec<BoardPoint> {
-		self.0.iter().map(|p| p.to_board_point()).collect()
+	pub fn to_usize_points(&self) -> Vec<Point<usize>> {
+		self.0.iter().map(|p| p.to_usize_point()).collect()
 	}
 }
 
@@ -98,10 +98,10 @@ impl Add for Position {
 	}
 }
 
-impl Add<Point> for Position {
+impl Add<Point<i8>> for Position {
 	type Output = Position;
 
-	fn add(mut self, rhs: Point) -> Self::Output {
+	fn add(mut self, rhs: Point<i8>) -> Self::Output {
 		self.update(|p| {
 			p.x += rhs.x;
 			p.y += rhs.y;

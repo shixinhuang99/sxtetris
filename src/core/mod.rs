@@ -1,8 +1,9 @@
-pub mod point;
-pub mod position;
-pub mod tetromino_kind;
+mod point;
+mod position;
+mod tetromino_kind;
 
-use tetromino_kind::TetrominoKind;
+pub use position::Position;
+pub use tetromino_kind::TetrominoKind;
 
 pub trait Board {
 	fn get_cell(&self, x: usize, y: usize) -> Option<&TetrominoKind>;

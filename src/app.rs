@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use crate::{
-	handler::{GameEvent, MainHandler},
+	handler::{Event, MainHandler},
 	save::{LastGame, Save},
 	state::{Screen, State},
 	term::Term,
@@ -38,11 +38,11 @@ impl App {
 		self.state.check_setting();
 
 		while let Some(event) = self.handler.recv().await {
-			if event == GameEvent::CtrlC {
+			if event == Event::CtrlC {
 				break;
 			}
 
-			if event == GameEvent::Tick {
+			if event == Event::Tick {
 				self.state.update_clear_rows_progress();
 				self.term.draw(|f| {
 					ui(f, &mut self.state);

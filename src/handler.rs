@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 
 use crossterm::event::{
-	Event, EventStream, KeyCode, KeyEventKind, KeyModifiers,
+	Event as TermEvent, EventStream, KeyCode, KeyEventKind, KeyModifiers,
 };
 use tokio::{
 	sync::{
@@ -13,15 +13,15 @@ use tokio::{
 
 use crate::consts::FRAME_RATE_SECS;
 
-type Sender = UnboundedSender<GameEvent>;
-type Receiver = UnboundedReceiver<GameEvent>;
+type Sender = UnboundedSender<Event>;
+type Receiver = UnboundedReceiver<Event>;
 type SubSender = broadcast::Sender<SubEvent>;
 type SubReceiver = broadcast::Receiver<SubEvent>;
 
 const MAX_GRAVITY_LEVEL: u32 = 15;
 
 #[derive(PartialEq)]
-pub enum GameEvent {
+pub enum Event {
 	Tick,
 	FocusLost,
 	CtrlC,
@@ -81,7 +81,7 @@ impl MainHandler {
 		}
 	}
 
-	pub async fn recv(&mut self) -> Option<GameEvent> {
+	pub async fn recv(&mut self) -> Option<Event> {
 		self.rx.recv().await
 	}
 
@@ -161,7 +161,7 @@ async fn tick_task(tx: Sender) {
 
 	loop {
 		tick_interval.tick().await;
-		tx.send(GameEvent::Tick).unwrap();
+		tx.send(Event::Tick).unwrap();
 	}
 }
 
@@ -176,18 +176,18 @@ async fn term_task(tx: Sender) {
 
 	while let Some(Ok(event)) = event_stream.next().await {
 		let game_event = match event {
-			Event::Key(key) if key.kind == KeyEventKind::Press => {
+			TermEvent::Key(key) if key.kind == KeyEventKind::Press => {
 				let e = match key.code {
 					KeyCode::Char('c')
 						if key.modifiers == KeyModifiers::CONTROL =>
 					{
-						GameEvent::CtrlC
+						Event::CtrlC
 					}
-					KeyCode::Up | KeyCode::Char('i') => GameEvent::Up,
-					KeyCode::Down | KeyCode::Char('k') => GameEvent::Down,
-					KeyCode::Left | KeyCode::Char('j') => GameEvent::Left,
-					KeyCode::Right | KeyCode::Char('l') => GameEvent::Right,
-					KeyCode::Enter => GameEvent::Enter,
+					KeyCode::Up | KeyCode::Char('i') => Event::Up,
+					KeyCode::Down | KeyCode::Char('k') => Event::Down,
+					KeyCode::Left | KeyCode::Char('j') => Event::Left,
+					KeyCode::Right | KeyCode::Char('l') => Event::Right,
+					KeyCode::Enter => Event::Enter,
 					KeyCode::Char(' ') => {
 						if is_last_key_space
 							&& Instant::now() - space_instant
@@ -197,15 +197,15 @@ async fn term_task(tx: Sender) {
 							continue;
 						}
 
-						GameEvent::Space
+						Event::Space
 					}
-					KeyCode::Esc => GameEvent::Esc,
-					KeyCode::Char('p') => GameEvent::P,
-					KeyCode::Char('z') => GameEvent::Z,
+					KeyCode::Esc => Event::Esc,
+					KeyCode::Char('p') => Event::P,
+					KeyCode::Char('z') => Event::Z,
 					_ => continue,
 				};
 
-				if e == GameEvent::Space {
+				if e == Event::Space {
 					is_last_key_space = true;
 					space_instant = Instant::now();
 				} else {
@@ -214,7 +214,7 @@ async fn term_task(tx: Sender) {
 
 				e
 			}
-			Event::FocusLost => GameEvent::FocusLost,
+			TermEvent::FocusLost => Event::FocusLost,
 			_ => continue,
 		};
 		tx.send(game_event).unwrap();
@@ -224,7 +224,7 @@ async fn term_task(tx: Sender) {
 async fn count_down_task(tx: Sender, cnt: u8) {
 	for n in (0..cnt).rev() {
 		sleep(Duration::from_secs(1)).await;
-		tx.send(GameEvent::CountDown(n)).unwrap();
+		tx.send(Event::CountDown(n)).unwrap();
 	}
 }
 
@@ -274,7 +274,7 @@ async fn gravity_task(tx: Sender, mut sub_rx: SubReceiver) {
 					continue;
 				}
 				gravity_instant = Instant::now();
-				tx.send(GameEvent::Gravity).unwrap();
+				tx.send(Event::Gravity).unwrap();
 			}
 		}
 	}
@@ -329,7 +329,7 @@ async fn lock_task(tx: Sender, mut sub_rx: SubReceiver) {
 					continue;
 				}
 				LOCKED.store(false, Relaxed);
-				tx.send(GameEvent::LockEnd).unwrap();
+				tx.send(Event::LockEnd).unwrap();
 				break;
 			}
 			_ = blink_interval.tick() => {
@@ -337,7 +337,7 @@ async fn lock_task(tx: Sender, mut sub_rx: SubReceiver) {
 					continue;
 				}
 				blink_instant = Instant::now();
-				tx.send(GameEvent::Blink).unwrap();
+				tx.send(Event::Blink).unwrap();
 			}
 		}
 	}
