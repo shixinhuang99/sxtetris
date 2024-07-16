@@ -1,9 +1,9 @@
 use std::collections::VecDeque;
 
-use super::active_tetromino::ActiveTetromino;
+use super::tetromino::Tetromino;
 use crate::{
 	consts::{MAIN_BOARD_COLS, MAIN_BOARD_ROWS},
-	core::{board::Board, position::Position, tetromino_kind::TetrominoKind},
+	core::{position::Position, tetromino_kind::TetrominoKind, Board},
 };
 
 pub struct MainBoard {
@@ -18,11 +18,11 @@ impl MainBoard {
 				vec![None; MAIN_BOARD_COLS];
 				MAIN_BOARD_ROWS
 			]),
-			line_clear: LineClear::new(),
+			line_clear: LineClear::default(),
 		}
 	}
 
-	pub fn lock_tetromino(&mut self, tetromino: &ActiveTetromino) {
+	pub fn lock_tetromino(&mut self, tetromino: &Tetromino) {
 		for p in tetromino.position.to_board_points() {
 			self.cells[p.y][p.x] = Some(tetromino.kind);
 		}
@@ -52,13 +52,13 @@ impl MainBoard {
 		num
 	}
 
-	fn clear_col(&mut self) {
-		for (y, row) in self.cells.iter_mut().enumerate() {
+	fn clear_cell(&mut self) {
+		for (y, line) in self.cells.iter_mut().enumerate() {
 			if !self.line_clear.lines.contains(&y) {
 				continue;
 			}
-			for (x, cell) in row.iter_mut().enumerate() {
-				if x == self.line_clear.column_cursor {
+			for (x, cell) in line.iter_mut().enumerate() {
+				if x == self.line_clear.curosr {
 					*cell = None;
 					// todo: confetti
 				}
@@ -79,13 +79,13 @@ impl MainBoard {
 		if self.line_clear.status == LineClearStatus::Done {
 			return;
 		}
-		self.clear_col();
-		if self.line_clear.column_cursor >= MAIN_BOARD_COLS {
-			self.line_clear.column_cursor = 0;
+		self.clear_cell();
+		if self.line_clear.curosr >= MAIN_BOARD_COLS {
+			self.line_clear.curosr = 0;
 			self.line_clear.status = LineClearStatus::Done;
 			self.gen_new_lines();
 		} else {
-			self.line_clear.column_cursor += 1;
+			self.line_clear.curosr += 1;
 		}
 	}
 }
@@ -96,24 +96,16 @@ impl Board for MainBoard {
 	}
 }
 
+#[derive(Default)]
 struct LineClear {
 	status: LineClearStatus,
 	lines: Vec<usize>,
-	column_cursor: usize,
+	curosr: usize,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Default)]
 enum LineClearStatus {
-	Pending,
+	#[default]
 	Done,
-}
-
-impl LineClear {
-	fn new() -> Self {
-		Self {
-			status: LineClearStatus::Done,
-			lines: vec![],
-			column_cursor: 0,
-		}
-	}
+	Pending,
 }

@@ -1,5 +1,6 @@
 use std::{
-	ops::{AddAssign, SubAssign},
+	array::IntoIter,
+	ops::{Add, Sub},
 	slice::Iter,
 };
 
@@ -28,6 +29,10 @@ impl Position {
 
 	pub fn iter(&self) -> Iter<Point> {
 		self.0.iter()
+	}
+
+	pub fn into_iter(self) -> IntoIter<Point, 4> {
+		self.0.into_iter()
 	}
 
 	pub fn update<F: FnMut(&mut Point)>(&mut self, f: F) {
@@ -63,20 +68,44 @@ impl Position {
 	}
 }
 
-impl SubAssign for Position {
-	fn sub_assign(&mut self, rhs: Self) {
-		for i in 0..self.0.len() {
-			self.0[i].x = self.0[i].x - rhs.0[i].x;
-			self.0[i].y = self.0[i].y - rhs.0[i].y;
-		}
+impl Default for Position {
+	fn default() -> Self {
+		Self::new([(0, 0); 4])
 	}
 }
 
-impl AddAssign for Position {
-	fn add_assign(&mut self, rhs: Self) {
+impl Sub for Position {
+	type Output = Position;
+
+	fn sub(mut self, rhs: Self) -> Self::Output {
 		for i in 0..self.0.len() {
-			self.0[i].x = self.0[i].x + rhs.0[i].x;
-			self.0[i].y = self.0[i].y + rhs.0[i].y;
+			self.0[i].x -= rhs.0[i].x;
+			self.0[i].y -= rhs.0[i].y;
 		}
+		self
+	}
+}
+
+impl Add for Position {
+	type Output = Position;
+
+	fn add(mut self, rhs: Self) -> Self::Output {
+		for i in 0..self.0.len() {
+			self.0[i].x += rhs.0[i].x;
+			self.0[i].y += rhs.0[i].y;
+		}
+		self
+	}
+}
+
+impl Add<Point> for Position {
+	type Output = Position;
+
+	fn add(mut self, rhs: Point) -> Self::Output {
+		self.update(|p| {
+			p.x += rhs.x;
+			p.y += rhs.y;
+		});
+		self
 	}
 }

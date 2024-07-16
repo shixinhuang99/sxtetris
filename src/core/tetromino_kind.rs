@@ -48,11 +48,11 @@ impl TetrominoKind {
 	pub fn color(&self) -> Color {
 		match self {
 			TetrominoKind::I => color::cyan(),
-			TetrominoKind::O => color::yellow(),
-			TetrominoKind::T => color::purple(),
-			TetrominoKind::L => color::orange(),
 			TetrominoKind::J => color::blue(),
+			TetrominoKind::L => color::orange(),
+			TetrominoKind::O => color::yellow(),
 			TetrominoKind::S => color::green(),
+			TetrominoKind::T => color::purple(),
 			TetrominoKind::Z => color::red(),
 		}
 	}
@@ -60,11 +60,11 @@ impl TetrominoKind {
 	pub fn dark_color(&self) -> Color {
 		match self {
 			TetrominoKind::I => color::dark_cyan(),
-			TetrominoKind::O => color::dark_yellow(),
-			TetrominoKind::T => color::dark_purple(),
-			TetrominoKind::L => color::dark_orange(),
 			TetrominoKind::J => color::dark_blue(),
+			TetrominoKind::L => color::dark_orange(),
+			TetrominoKind::O => color::dark_yellow(),
 			TetrominoKind::S => color::dark_green(),
+			TetrominoKind::T => color::dark_purple(),
 			TetrominoKind::Z => color::dark_red(),
 		}
 	}

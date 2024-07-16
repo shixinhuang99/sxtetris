@@ -6,24 +6,21 @@ use crate::{
 	core::{position::Position, tetromino_kind::TetrominoKind},
 };
 
-const X_OFFEST: i8 = 3;
-const Y_OFFEST: i8 = MAIN_BOARD_BUFFER_ROWS as i8;
-
-pub struct ActiveTetromino {
+pub struct Tetromino {
 	pub kind: TetrominoKind,
 	pub position: Position,
 	orientation: Orientation,
 	board: Rc<MainBoard>,
 }
 
-impl ActiveTetromino {
+impl Tetromino {
 	pub fn new(kind: TetrominoKind, board: Rc<MainBoard>) -> Self {
 		let orientation = Orientation::N;
 		let mut position = kind.init_position(orientation.into());
 
 		position.update(|p| {
-			p.x += X_OFFEST;
-			p.y += Y_OFFEST;
+			p.x += 3;
+			p.y += MAIN_BOARD_BUFFER_ROWS as i8;
 		});
 
 		Self {
@@ -76,10 +73,7 @@ impl ActiveTetromino {
 		use Orientation::*;
 
 		let init_position = self.kind.init_position(self.orientation.into());
-
-		let mut diff = Position::new([(0, 0); 4]);
-
-		diff -= init_position;
+		let diff = self.position.clone() - init_position;
 
 		let next_orientation = match action {
 			TetrominoAction::RotateRight => {
@@ -101,10 +95,8 @@ impl ActiveTetromino {
 			_ => unreachable!(),
 		};
 
-		let mut rotate_position =
-			self.kind.init_position(next_orientation.into());
-
-		rotate_position += diff;
+		let init_position = self.kind.init_position(next_orientation.into());
+		let rotate_position = init_position + diff;
 
 		if rotate_position.is_outside_the_board()
 			|| self.board.is_collision(&rotate_position)
@@ -169,13 +161,8 @@ impl ActiveTetromino {
 				_ => unreachable!(),
 			};
 
-			for offest in kick_offest.iter() {
-				let mut kick_position = rotate_position.clone();
-
-				kick_position.update(|p| {
-					p.x += offest.x;
-					p.y += offest.y;
-				});
+			for offest in kick_offest.into_iter() {
+				let kick_position = rotate_position.clone() + offest;
 
 				if kick_position.is_outside_the_board()
 					|| self.board.is_collision(&kick_position)
@@ -184,6 +171,7 @@ impl ActiveTetromino {
 				}
 
 				self.position = kick_position;
+				self.orientation = next_orientation;
 
 				return;
 			}
@@ -192,6 +180,7 @@ impl ActiveTetromino {
 		}
 
 		self.position = rotate_position;
+		self.orientation = next_orientation;
 	}
 }
 
