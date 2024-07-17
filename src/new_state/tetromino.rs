@@ -1,23 +1,22 @@
-use std::{cell::RefCell, rc::Rc};
-
-use super::MainBoard;
+use super::SharedMainBoard;
 use crate::{
+	common::{Position, TetrominoKind},
 	consts::MAIN_BOARD_BUFFER_ROWS,
-	core::{Position, TetrominoKind},
 };
 
+#[derive(Clone)]
 pub struct Tetromino {
 	pub kind: TetrominoKind,
 	pub position: Position,
 	pub blink: bool,
 	orientation: Orientation,
-	board: Rc<RefCell<MainBoard>>,
+	board: SharedMainBoard,
 }
 
 impl Tetromino {
-	pub fn new(board: Rc<RefCell<MainBoard>>) -> Self {
+	pub fn new(board: SharedMainBoard) -> Self {
 		Self {
-			kind: TetrominoKind::I,
+			kind: TetrominoKind::default(),
 			position: Position::default(),
 			blink: false,
 			orientation: Orientation::N,
@@ -25,23 +24,21 @@ impl Tetromino {
 		}
 	}
 
-	pub fn into_new(self, kind: TetrominoKind) -> Self {
-		let mut tetromino = Tetromino::new(self.board);
-
-		tetromino.kind = kind;
-		tetromino.position = kind.init_position(Orientation::N.into());
-		tetromino.position.update(|p| {
+	pub fn set_next(&mut self, kind: TetrominoKind) {
+		self.kind = kind;
+		self.position = kind.init_position(Orientation::N.into());
+		self.position.update(|p| {
 			p.x += 3;
 			p.y += MAIN_BOARD_BUFFER_ROWS as i8;
 		});
-
-		tetromino
+		self.orientation = Orientation::N;
+		self.blink = false;
 	}
 
-	fn walk(&mut self, action: &TetrominoAction) {
+	pub fn walk(&mut self, action: TetrominoAction) -> bool {
 		let mut position = self.position.clone();
 
-		let moved = match action {
+		let can_walk = match action {
 			TetrominoAction::SoftDrop => {
 				if position.is_touch_bottom() {
 					false
@@ -50,7 +47,7 @@ impl Tetromino {
 					true
 				}
 			}
-			TetrominoAction::Left => {
+			TetrominoAction::WalkLeft => {
 				if position.is_touch_left() {
 					false
 				} else {
@@ -58,7 +55,7 @@ impl Tetromino {
 					true
 				}
 			}
-			TetrominoAction::Right => {
+			TetrominoAction::WalkRight => {
 				if position.is_touch_right() {
 					false
 				} else {
@@ -69,14 +66,15 @@ impl Tetromino {
 			_ => unreachable!(),
 		};
 
-		if !moved || self.board.borrow().is_collision(&position) {
-			return;
+		if !can_walk || self.board.borrow().is_collision(&position) {
+			false
+		} else {
+			self.position = position;
+			true
 		}
-
-		self.position = position;
 	}
 
-	fn rotate(&mut self, action: &TetrominoAction) {
+	pub fn rotate(&mut self, action: TetrominoAction) -> bool {
 		use Orientation::*;
 
 		let init_position = self.kind.init_position(self.orientation.into());
@@ -104,6 +102,8 @@ impl Tetromino {
 
 		let init_position = self.kind.init_position(next_orientation.into());
 		let rotate_position = init_position + diff;
+
+		let mut rotated = false;
 
 		if rotate_position.is_outside_the_board()
 			|| self.board.borrow().is_collision(&rotate_position)
@@ -177,17 +177,25 @@ impl Tetromino {
 					continue;
 				}
 
-				self.position = kick_position;
-				self.orientation = next_orientation;
+				if self.position != kick_position {
+					self.position = kick_position;
+					self.orientation = next_orientation;
+					rotated = true;
+				}
 
-				return;
+				break;
 			}
 
-			return;
+			return rotated;
 		}
 
-		self.position = rotate_position;
-		self.orientation = next_orientation;
+		if self.position != rotate_position {
+			self.position = rotate_position;
+			self.orientation = next_orientation;
+			rotated = true;
+		}
+
+		rotated
 	}
 }
 
@@ -197,18 +205,6 @@ enum Orientation {
 	E,
 	W,
 	S,
-}
-
-impl From<usize> for Orientation {
-	fn from(value: usize) -> Self {
-		match value {
-			0 => Orientation::N,
-			1 => Orientation::E,
-			2 => Orientation::S,
-			3 => Orientation::W,
-			_ => unreachable!(),
-		}
-	}
 }
 
 impl From<Orientation> for usize {
@@ -222,12 +218,10 @@ impl From<Orientation> for usize {
 	}
 }
 
-#[derive(PartialEq, Eq)]
 pub enum TetrominoAction {
-	Left,
-	Right,
+	WalkLeft,
+	WalkRight,
 	SoftDrop,
-	HardDrop,
 	RotateRight,
 	RotateLeft,
 }

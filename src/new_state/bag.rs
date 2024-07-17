@@ -1,7 +1,7 @@
-use crate::core::TetrominoKind;
+use crate::common::TetrominoKind;
 
 pub struct Bag {
-	kinds: [TetrominoKind; 7],
+	kinds: Vec<TetrominoKind>,
 	cursor: usize,
 	last: Option<TetrominoKind>,
 }
@@ -9,7 +9,7 @@ pub struct Bag {
 impl Bag {
 	pub fn new() -> Self {
 		Self {
-			kinds: [
+			kinds: vec![
 				TetrominoKind::I,
 				TetrominoKind::J,
 				TetrominoKind::L,

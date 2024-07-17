@@ -1,7 +1,7 @@
 mod app;
 mod audio;
+mod common;
 mod consts;
-mod core;
 mod handler;
 mod new_state;
 mod save;

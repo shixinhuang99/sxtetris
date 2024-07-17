@@ -1,5 +1,6 @@
-use crate::core::{Position, TetrominoKind};
+use crate::common::{Position, TetrominoKind};
 
+#[derive(Default)]
 pub struct GhostTetromino {
 	pub kind: TetrominoKind,
 	pub position: Position,
@@ -10,15 +11,6 @@ impl GhostTetromino {
 		Self {
 			kind,
 			position,
-		}
-	}
-}
-
-impl Default for GhostTetromino {
-	fn default() -> Self {
-		Self {
-			kind: TetrominoKind::I,
-			position: Position::default(),
 		}
 	}
 }

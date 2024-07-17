@@ -1,27 +1,30 @@
 use crate::{
+	common::{Board, TetrominoKind},
 	consts::{NEXT_BOARD_COLS, NEXT_BOARD_ROWS},
-	core::{Board, TetrominoKind},
 };
 
 pub struct NextBoard {
 	cells: Vec<Vec<Option<TetrominoKind>>>,
+	pub current: TetrominoKind,
 }
 
 impl NextBoard {
 	pub fn new() -> Self {
 		Self {
 			cells: vec![vec![None; NEXT_BOARD_COLS]; NEXT_BOARD_ROWS],
+			current: TetrominoKind::default(),
 		}
 	}
 
-	pub fn set_next(&mut self, next: TetrominoKind) {
+	pub fn set_next(&mut self, kind: TetrominoKind) {
+		self.current = kind;
 		self.cells.clear();
 
-		let mut position = next.init_position(0);
+		let mut position = kind.init_position(0);
 		position.update(|p| p.x += 3);
 
 		for p in position.to_usize_points() {
-			self.cells[p.y][p.x] = Some(next);
+			self.cells[p.y][p.x] = Some(kind);
 		}
 	}
 }

@@ -18,9 +18,7 @@ type Receiver = UnboundedReceiver<Event>;
 type SubSender = broadcast::Sender<SubEvent>;
 type SubReceiver = broadcast::Receiver<SubEvent>;
 
-const MAX_GRAVITY_LEVEL: u32 = 15;
-
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum Event {
 	Tick,
 	FocusLost,
@@ -150,7 +148,7 @@ impl SubHandler {
 		self.send(SubEvent::Pause);
 	}
 
-	pub fn cancel_pause(&mut self) {
+	pub fn cancel_pause(&self) {
 		PAUSED.store(false, Relaxed);
 		self.send(SubEvent::PauseCancel);
 	}
@@ -229,6 +227,8 @@ async fn count_down_task(tx: Sender, cnt: u8) {
 }
 
 async fn gravity_task(tx: Sender, mut sub_rx: SubReceiver) {
+	const MAX_GRAVITY_LEVEL: u32 = 15;
+
 	let mut paused_instant = Instant::now();
 
 	let mut level = 1;

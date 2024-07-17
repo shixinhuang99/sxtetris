@@ -1,18 +1,20 @@
-use std::collections::VecDeque;
+use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use super::tetromino::Tetromino;
 use crate::{
+	common::{Board, Position, TetrominoKind},
 	consts::{MAIN_BOARD_COLS, MAIN_BOARD_ROWS},
-	core::{Board, Position, TetrominoKind},
 };
+
+pub type SharedMainBoard = Rc<RefCell<MainBoard>>;
 
 pub struct MainBoard {
 	cells: VecDeque<Vec<Option<TetrominoKind>>>,
-	line_clear: LineClear,
+	pub line_clear: LineClear,
 }
 
 impl MainBoard {
-	pub fn new() -> Self {
+	fn new() -> Self {
 		Self {
 			cells: VecDeque::from_iter(vec![
 				vec![None; MAIN_BOARD_COLS];
@@ -20,6 +22,10 @@ impl MainBoard {
 			]),
 			line_clear: LineClear::default(),
 		}
+	}
+
+	pub fn new_shared() -> SharedMainBoard {
+		Rc::new(RefCell::new(Self::new()))
 	}
 
 	pub fn lock_tetromino(&mut self, tetromino: &Tetromino) {
@@ -36,9 +42,6 @@ impl MainBoard {
 	}
 
 	pub fn check_line_clear(&mut self) -> usize {
-		if self.line_clear.status == LineClearStatus::Done {
-			return 0;
-		}
 		for (i, line) in self.cells.iter().enumerate() {
 			if line.iter().any(|kind| kind.is_none()) {
 				continue;
@@ -76,7 +79,7 @@ impl MainBoard {
 
 	pub fn update_line_clear(&mut self) {
 		// todo: confetti
-		if self.line_clear.status == LineClearStatus::Done {
+		if self.line_clear.status != LineClearStatus::Pending {
 			return;
 		}
 		self.clear_cell();
@@ -97,15 +100,16 @@ impl Board for MainBoard {
 }
 
 #[derive(Default)]
-struct LineClear {
-	status: LineClearStatus,
+pub struct LineClear {
+	pub status: LineClearStatus,
 	lines: Vec<usize>,
 	curosr: usize,
 }
 
 #[derive(PartialEq, Eq, Default)]
-enum LineClearStatus {
+pub enum LineClearStatus {
 	#[default]
-	Done,
+	None,
 	Pending,
+	Done,
 }

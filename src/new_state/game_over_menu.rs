@@ -1,7 +1,7 @@
-use crate::core::Menu;
+use crate::common::Menu;
 
 pub struct GameOverMenu {
-	items: [&'static str; 3],
+	items: Vec<&'static str>,
 	cursor: usize,
 	new_score: Option<String>,
 }
@@ -9,7 +9,7 @@ pub struct GameOverMenu {
 impl GameOverMenu {
 	pub fn new() -> Self {
 		Self {
-			items: ["NEW GAME", "SCORES", "QUIT"],
+			items: vec!["NEW GAME", "SCORES", "QUIT"],
 			cursor: 0,
 			new_score: None,
 		}
@@ -25,8 +25,12 @@ impl GameOverMenu {
 }
 
 impl Menu for GameOverMenu {
-	fn cursor_and_end(&mut self) -> (&mut usize, usize) {
-		(&mut self.cursor, self.items.len() - 1)
+	fn cursor(&mut self) -> &mut usize {
+		&mut self.cursor
+	}
+
+	fn end(&self) -> usize {
+		self.items.len() - 1
 	}
 }
 

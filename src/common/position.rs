@@ -66,6 +66,10 @@ impl Position {
 	pub fn to_usize_points(&self) -> Vec<Point<usize>> {
 		self.0.iter().map(|p| p.to_usize_point()).collect()
 	}
+
+	pub fn bottom_point(&self) -> &Point<i8> {
+		self.0.iter().max_by(|a, b| a.y.cmp(&b.y)).unwrap()
+	}
 }
 
 impl Default for Position {

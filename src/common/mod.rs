@@ -14,10 +14,14 @@ pub trait Reset {
 }
 
 pub trait Menu {
-	fn cursor_and_end(&mut self) -> (&mut usize, usize);
+	fn cursor(&mut self) -> &mut usize;
+
+	fn end(&self) -> usize;
 
 	fn up(&mut self) {
-		let (cursor, end) = self.cursor_and_end();
+		let end = self.end();
+		let cursor = self.cursor();
+
 		if *cursor == 0 {
 			*cursor = end;
 		} else {
@@ -26,7 +30,9 @@ pub trait Menu {
 	}
 
 	fn down(&mut self) {
-		let (cursor, end) = self.cursor_and_end();
+		let end = self.end();
+		let cursor = self.cursor();
+
 		if *cursor == end {
 			*cursor = 0;
 		} else {

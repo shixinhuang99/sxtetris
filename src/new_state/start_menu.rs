@@ -1,22 +1,26 @@
-use crate::core::Menu;
+use crate::common::Menu;
 
 pub struct StartMenu {
-	items: [&'static str; 6],
+	items: Vec<&'static str>,
 	cursor: usize,
 }
 
 impl StartMenu {
 	pub fn new() -> Self {
 		Self {
-			items: ["PLAY", "SCORES", "SETTING", "HELP", "ABOUT", "QUIT"],
+			items: vec!["PLAY", "SCORES", "SETTING", "HELP", "ABOUT", "QUIT"],
 			cursor: 0,
 		}
 	}
 }
 
 impl Menu for StartMenu {
-	fn cursor_and_end(&mut self) -> (&mut usize, usize) {
-		(&mut self.cursor, self.items.len() - 1)
+	fn cursor(&mut self) -> &mut usize {
+		&mut self.cursor
+	}
+
+	fn end(&self) -> usize {
+		self.items.len() - 1
 	}
 }
 

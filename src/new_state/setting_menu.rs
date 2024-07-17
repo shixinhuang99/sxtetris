@@ -1,22 +1,26 @@
-use crate::core::Menu;
+use crate::common::Menu;
 
 pub struct SettingMenu {
-	items: [&'static str; 3],
+	items: Vec<&'static str>,
 	cursor: usize,
 }
 
 impl SettingMenu {
 	pub fn new() -> Self {
 		Self {
-			items: ["PARTICLES", "MUSIC", "SOUND"],
+			items: vec!["PARTICLES", "MUSIC", "SOUND"],
 			cursor: 0,
 		}
 	}
 }
 
 impl Menu for SettingMenu {
-	fn cursor_and_end(&mut self) -> (&mut usize, usize) {
-		(&mut self.cursor, self.items.len() - 1)
+	fn cursor(&mut self) -> &mut usize {
+		&mut self.cursor
+	}
+
+	fn end(&self) -> usize {
+		self.items.len() - 1
 	}
 }
 

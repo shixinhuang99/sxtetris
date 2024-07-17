@@ -3,8 +3,9 @@ use serde::{Deserialize, Serialize};
 
 use super::position::Position;
 
-#[derive(Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 pub enum TetrominoKind {
+	#[default]
 	I,
 	/// ```
 	/// []   
