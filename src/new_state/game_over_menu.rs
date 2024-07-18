@@ -3,7 +3,7 @@ use crate::common::Menu;
 pub struct GameOverMenu {
 	items: Vec<&'static str>,
 	cursor: usize,
-	new_score: Option<String>,
+	pub new_score: Option<String>,
 }
 
 impl GameOverMenu {
@@ -15,9 +15,9 @@ impl GameOverMenu {
 		}
 	}
 
-	pub fn set_new_score(&mut self, score_and_idx: Option<(u32, usize)>) {
-		if let Some((score, idx)) = score_and_idx {
-			self.new_score = Some(format!("{}.{:>11}", idx + 1, score));
+	pub fn set_new_score(&mut self, score: u32, idx: Option<usize>) {
+		if let Some(i) = idx {
+			self.new_score = Some(format!("{}.{:>11}", i + 1, score));
 		} else {
 			self.new_score = None;
 		}
@@ -25,12 +25,16 @@ impl GameOverMenu {
 }
 
 impl Menu for GameOverMenu {
-	fn cursor(&mut self) -> &mut usize {
+	fn cursor_mut(&mut self) -> &mut usize {
 		&mut self.cursor
 	}
 
-	fn end(&self) -> usize {
-		self.items.len() - 1
+	fn cursor(&self) -> usize {
+		self.cursor
+	}
+
+	fn items(&self) -> &[&'static str] {
+		&self.items
 	}
 }
 

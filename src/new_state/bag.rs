@@ -1,5 +1,8 @@
-use crate::common::TetrominoKind;
+use serde::{Deserialize, Serialize};
 
+use crate::common::{Reset, TetrominoKind};
+
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Bag {
 	kinds: Vec<TetrominoKind>,
 	cursor: usize,
@@ -40,5 +43,11 @@ impl Bag {
 		self.last = Some(kind);
 
 		kind
+	}
+}
+
+impl Reset for Bag {
+	fn reset(&mut self) {
+		*self = Self::new();
 	}
 }

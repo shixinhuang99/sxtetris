@@ -70,6 +70,16 @@ impl Position {
 	pub fn bottom_point(&self) -> &Point<i8> {
 		self.0.iter().max_by(|a, b| a.y.cmp(&b.y)).unwrap()
 	}
+
+	pub fn contains(&self, x: usize, y: usize) -> bool {
+		self.0
+			.iter()
+			.any(|p| p.x as usize == x && p.y as usize == y)
+	}
+}
+
+pub const fn pos(raw_points: [(i8, i8); 4]) -> Position {
+	Position::new(raw_points)
 }
 
 impl Default for Position {

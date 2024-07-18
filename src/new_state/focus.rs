@@ -1,3 +1,4 @@
+#[derive(PartialEq, Eq)]
 pub enum Scene {
 	StartMenu,
 	Game,
@@ -30,15 +31,14 @@ impl Focus {
 	}
 
 	pub fn back(&mut self) {
-		if self.history.len() == 1
-			&& matches!(self.history[0], Scene::StartMenu | Scene::Game)
-		{
-			return;
-		}
 		self.history.pop();
 	}
 
 	pub fn current(&self) -> &Scene {
-		self.history.last().unwrap()
+		self.history.last().expect("should be a least one")
+	}
+
+	pub fn contains(&self, scene: Scene) -> bool {
+		self.history.contains(&scene)
 	}
 }

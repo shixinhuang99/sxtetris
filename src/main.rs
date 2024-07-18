@@ -2,10 +2,10 @@ mod app;
 mod audio;
 mod common;
 mod consts;
+mod global;
 mod handler;
 mod new_state;
 mod save;
-mod state;
 mod term;
 mod ui;
 
@@ -15,12 +15,7 @@ use app::App;
 #[tokio::main]
 async fn main() {
 	#[cfg(feature = "_dev")]
-	simplelog::WriteLogger::init(
-		simplelog::LevelFilter::Trace,
-		simplelog::Config::default(),
-		std::fs::File::create("trace.log").unwrap(),
-	)
-	.unwrap();
+	init_log();
 
 	if let Err(err) = run().await {
 		eprintln!("{}", err);
@@ -28,9 +23,16 @@ async fn main() {
 }
 
 async fn run() -> Result<()> {
-	let mut app = App::new()?;
+	App::new()?.run().await
+}
 
-	app.run().await?;
+#[cfg(feature = "_dev")]
+fn init_log() {
+	use std::fs;
 
-	Ok(())
+	use simplelog::{Config, LevelFilter, WriteLogger};
+
+	let log_file = fs::File::create("trace.log").unwrap();
+
+	WriteLogger::init(LevelFilter::Trace, Config::default(), log_file).unwrap();
 }

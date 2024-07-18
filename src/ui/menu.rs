@@ -6,20 +6,22 @@ use ratatui::{
 };
 use tui_big_text::{BigText, PixelSize};
 
-use crate::state::ListState;
+use crate::common::Menu;
 
-pub fn list(f: &mut Frame, rect: Rect, list_state: &ListState) {
-	let v_chunks =
-		Layout::vertical(vec![Constraint::Length(4); list_state.items.len()])
-			.spacing(2)
-			.split(rect);
+pub fn menu(f: &mut Frame, rect: Rect, menuable: &dyn Menu) {
+	let cursor = menuable.cursor();
+	let items = menuable.items();
 
-	for (i, item) in list_state.items.iter().enumerate() {
+	let v_chunks = Layout::vertical(vec![Constraint::Length(4); items.len()])
+		.spacing(2)
+		.split(rect);
+
+	for (i, item) in items.iter().enumerate() {
 		let title = BigText::builder()
 			.pixel_size(PixelSize::Quadrant)
-			.lines([Line::raw(item)])
+			.lines([Line::raw(item.to_string())])
 			.style(
-				if i == list_state.cursor {
+				if i == cursor {
 					Style::new().light_yellow()
 				} else {
 					Style::new().white()

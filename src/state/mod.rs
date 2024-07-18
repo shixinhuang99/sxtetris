@@ -30,7 +30,8 @@ pub use tetromino_type::TetrominoType;
 use crate::{
 	audio::Audio,
 	consts::{BOARD_COLS, BOARD_ROWS, PREVIEW_BOARD_COLS, PREVIEW_BOARD_ROWS},
-	handler::{is_locked, is_paused, Event, SubHandler},
+	global::{is_locked, is_paused},
+	handler::{Event, SubHandler},
 };
 
 const BOARD_ROWS_I32: i32 = BOARD_ROWS as i32;
@@ -101,8 +102,8 @@ impl State {
 		if self.board.status == BoardStatus::Pending {
 			return;
 		}
-		if let Event::CountDown(v) = event {
-			self.count_down = v;
+		if let Event::CountDown = event {
+			self.count_down -= 1;
 			if self.count_down == 0 {
 				self.handler.cancel_pause();
 				self.handler.spawn_gravity_task();

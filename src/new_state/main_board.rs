@@ -1,16 +1,27 @@
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
-use super::tetromino::Tetromino;
+use serde::{Deserialize, Serialize};
+
+use super::Tetromino;
 use crate::{
-	common::{Board, Position, TetrominoKind},
+	common::{Board, Position, Reset, TetrominoKind},
 	consts::{MAIN_BOARD_COLS, MAIN_BOARD_ROWS},
 };
 
 pub type SharedMainBoard = Rc<RefCell<MainBoard>>;
 
+#[derive(Clone, Deserialize, Serialize)]
 pub struct MainBoard {
 	cells: VecDeque<Vec<Option<TetrominoKind>>>,
+	#[serde(skip)]
 	pub line_clear: LineClear,
+}
+
+#[derive(Clone, Default)]
+pub struct LineClear {
+	pub in_progress: bool,
+	lines: Vec<usize>,
+	curosr: usize,
 }
 
 impl MainBoard {
@@ -28,10 +39,24 @@ impl MainBoard {
 		Rc::new(RefCell::new(Self::new()))
 	}
 
-	pub fn lock_tetromino(&mut self, tetromino: &Tetromino) {
+	pub fn lock_tetromino(&mut self, tetromino: &Tetromino) -> usize {
 		for p in tetromino.position.to_usize_points() {
 			self.cells[p.y][p.x] = Some(tetromino.kind);
 		}
+
+		for (i, line) in self.cells.iter().enumerate() {
+			if line.iter().any(|kind| kind.is_none()) {
+				continue;
+			}
+			self.line_clear.lines.push(i);
+		}
+
+		let num = self.line_clear.lines.len();
+		if num != 0 {
+			self.line_clear.in_progress = true;
+		}
+
+		num
 	}
 
 	pub fn is_collision(&self, position: &Position) -> bool {
@@ -39,20 +64,6 @@ impl MainBoard {
 			.to_usize_points()
 			.iter()
 			.any(|p| self.cells[p.y][p.x].is_some())
-	}
-
-	pub fn check_line_clear(&mut self) -> usize {
-		for (i, line) in self.cells.iter().enumerate() {
-			if line.iter().any(|kind| kind.is_none()) {
-				continue;
-			}
-			self.line_clear.lines.push(i);
-		}
-		let num = self.line_clear.lines.len();
-		if num != 0 {
-			self.line_clear.status = LineClearStatus::Pending;
-		}
-		num
 	}
 
 	fn clear_cell(&mut self) {
@@ -79,13 +90,13 @@ impl MainBoard {
 
 	pub fn update_line_clear(&mut self) {
 		// todo: confetti
-		if self.line_clear.status != LineClearStatus::Pending {
+		if !self.line_clear.in_progress {
 			return;
 		}
 		self.clear_cell();
 		if self.line_clear.curosr >= MAIN_BOARD_COLS {
 			self.line_clear.curosr = 0;
-			self.line_clear.status = LineClearStatus::Done;
+			self.line_clear.in_progress = false;
 			self.gen_new_lines();
 		} else {
 			self.line_clear.curosr += 1;
@@ -94,22 +105,13 @@ impl MainBoard {
 }
 
 impl Board for MainBoard {
-	fn get_cell(&self, x: usize, y: usize) -> Option<&TetrominoKind> {
+	fn get_kind(&self, x: usize, y: usize) -> Option<&TetrominoKind> {
 		self.cells[y][x].as_ref()
 	}
 }
 
-#[derive(Default)]
-pub struct LineClear {
-	pub status: LineClearStatus,
-	lines: Vec<usize>,
-	curosr: usize,
-}
-
-#[derive(PartialEq, Eq, Default)]
-pub enum LineClearStatus {
-	#[default]
-	None,
-	Pending,
-	Done,
+impl Reset for MainBoard {
+	fn reset(&mut self) {
+		*self = Self::new();
+	}
 }

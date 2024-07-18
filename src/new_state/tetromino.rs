@@ -1,15 +1,19 @@
-use super::SharedMainBoard;
+use serde::{Deserialize, Serialize};
+
+use super::{MainBoard, SharedMainBoard};
 use crate::{
-	common::{Position, TetrominoKind},
+	common::{pos, Position, TetrominoKind},
 	consts::MAIN_BOARD_BUFFER_ROWS,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Tetromino {
 	pub kind: TetrominoKind,
 	pub position: Position,
-	pub blink: bool,
 	orientation: Orientation,
+	#[serde(skip)]
+	pub blink: bool,
+	#[serde(skip, default = "MainBoard::new_shared")]
 	board: SharedMainBoard,
 }
 
@@ -19,20 +23,24 @@ impl Tetromino {
 			kind: TetrominoKind::default(),
 			position: Position::default(),
 			blink: false,
-			orientation: Orientation::N,
+			orientation: Orientation::default(),
 			board,
 		}
 	}
 
 	pub fn set_next(&mut self, kind: TetrominoKind) {
 		self.kind = kind;
-		self.position = kind.init_position(Orientation::N.into());
+		self.orientation = Orientation::default();
+		self.position = kind.init_position(self.orientation.into());
 		self.position.update(|p| {
 			p.x += 3;
 			p.y += MAIN_BOARD_BUFFER_ROWS as i8;
 		});
-		self.orientation = Orientation::N;
 		self.blink = false;
+	}
+
+	pub fn set_board(&mut self, board: SharedMainBoard) {
+		self.board = board;
 	}
 
 	pub fn walk(&mut self, action: TetrominoAction) -> bool {
@@ -185,11 +193,7 @@ impl Tetromino {
 
 				break;
 			}
-
-			return rotated;
-		}
-
-		if self.position != rotate_position {
+		} else if self.position != rotate_position {
 			self.position = rotate_position;
 			self.orientation = next_orientation;
 			rotated = true;
@@ -199,8 +203,9 @@ impl Tetromino {
 	}
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default, Deserialize, Serialize)]
 enum Orientation {
+	#[default]
 	N,
 	E,
 	W,
@@ -227,45 +232,41 @@ pub enum TetrominoAction {
 }
 
 mod kick_map_jlstz {
-	use super::Position;
+	use super::{pos, Position};
 
-	pub const NE: Position =
-		Position::new([(-1, 0), (-1, 1), (0, -2), (-1, -2)]);
+	pub const NE: Position = pos([(-1, 0), (-1, 1), (0, -2), (-1, -2)]);
 
-	pub const EN: Position = Position::new([(1, 0), (1, -1), (0, 2), (1, 2)]);
+	pub const EN: Position = pos([(1, 0), (1, -1), (0, 2), (1, 2)]);
 
-	pub const ES: Position = Position::new([(1, 0), (1, -1), (0, 2), (1, 2)]);
+	pub const ES: Position = pos([(1, 0), (1, -1), (0, 2), (1, 2)]);
 
-	pub const SE: Position =
-		Position::new([(-1, 0), (-1, 1), (0, -2), (-1, -2)]);
+	pub const SE: Position = pos([(-1, 0), (-1, 1), (0, -2), (-1, -2)]);
 
-	pub const SW: Position = Position::new([(1, 0), (1, 1), (0, -2), (1, -2)]);
+	pub const SW: Position = pos([(1, 0), (1, 1), (0, -2), (1, -2)]);
 
-	pub const WS: Position =
-		Position::new([(-1, 0), (-1, -1), (0, 2), (-1, 2)]);
+	pub const WS: Position = pos([(-1, 0), (-1, -1), (0, 2), (-1, 2)]);
 
-	pub const WN: Position =
-		Position::new([(-1, 0), (-1, -1), (0, 2), (-1, 2)]);
+	pub const WN: Position = pos([(-1, 0), (-1, -1), (0, 2), (-1, 2)]);
 
-	pub const NW: Position = Position::new([(1, 0), (1, 1), (0, -2), (1, -2)]);
+	pub const NW: Position = pos([(1, 0), (1, 1), (0, -2), (1, -2)]);
 }
 
 mod kick_map_i {
-	use super::Position;
+	use super::{pos, Position};
 
-	pub const NE: Position = Position::new([(-2, 0), (1, 0), (-2, -1), (1, 2)]);
+	pub const NE: Position = pos([(-2, 0), (1, 0), (-2, -1), (1, 2)]);
 
-	pub const EN: Position = Position::new([(2, 0), (-1, 0), (2, 1), (-1, -2)]);
+	pub const EN: Position = pos([(2, 0), (-1, 0), (2, 1), (-1, -2)]);
 
-	pub const ES: Position = Position::new([(-1, 0), (2, 0), (-1, 2), (2, -1)]);
+	pub const ES: Position = pos([(-1, 0), (2, 0), (-1, 2), (2, -1)]);
 
-	pub const SE: Position = Position::new([(1, 0), (-2, 0), (1, -2), (-2, 1)]);
+	pub const SE: Position = pos([(1, 0), (-2, 0), (1, -2), (-2, 1)]);
 
-	pub const SW: Position = Position::new([(2, 0), (-1, 0), (2, 1), (-1, -2)]);
+	pub const SW: Position = pos([(2, 0), (-1, 0), (2, 1), (-1, -2)]);
 
-	pub const WS: Position = Position::new([(-2, 0), (1, 0), (-2, -1), (1, 2)]);
+	pub const WS: Position = pos([(-2, 0), (1, 0), (-2, -1), (1, 2)]);
 
-	pub const WN: Position = Position::new([(1, 0), (-2, 0), (1, -2), (-2, 1)]);
+	pub const WN: Position = pos([(1, 0), (-2, 0), (1, -2), (-2, 1)]);
 
-	pub const NW: Position = Position::new([(-1, 0), (2, 0), (-1, 2), (2, -1)]);
+	pub const NW: Position = pos([(-1, 0), (2, 0), (-1, 2), (2, -1)]);
 }

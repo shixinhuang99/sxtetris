@@ -1,5 +1,3 @@
-use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
-
 use crossterm::event::{
 	Event as TermEvent, EventStream, KeyCode, KeyEventKind, KeyModifiers,
 };
@@ -11,7 +9,10 @@ use tokio::{
 	time::{interval, sleep, Duration, Instant, Interval},
 };
 
-use crate::consts::FRAME_RATE_SECS;
+use crate::{
+	consts::FRAME_RATE_SECS,
+	global::{is_locked, is_paused, set_locked, set_paused},
+};
 
 type Sender = UnboundedSender<Event>;
 type Receiver = UnboundedReceiver<Event>;
@@ -34,7 +35,7 @@ pub enum Event {
 	Z,
 	Gravity,
 	LockEnd,
-	CountDown(u8),
+	CountDown,
 	Blink,
 }
 
@@ -47,18 +48,6 @@ enum SubEvent {
 	Level(u32),
 	LockCancel,
 	LockRefresh,
-}
-
-static PAUSED: AtomicBool = AtomicBool::new(false);
-
-static LOCKED: AtomicBool = AtomicBool::new(false);
-
-pub fn is_paused() -> bool {
-	PAUSED.load(Relaxed)
-}
-
-pub fn is_locked() -> bool {
-	LOCKED.load(Relaxed)
 }
 
 pub struct MainHandler {
@@ -114,7 +103,7 @@ impl SubHandler {
 	}
 
 	pub fn spawn_lock_task(&self) {
-		LOCKED.store(true, Relaxed);
+		set_locked(true);
 		tokio::spawn(lock_task(self.tx.clone(), self.sub_tx.subscribe()));
 	}
 
@@ -135,7 +124,7 @@ impl SubHandler {
 	}
 
 	pub fn cancel_lock(&self) {
-		LOCKED.store(false, Relaxed);
+		set_locked(false);
 		self.send(SubEvent::LockCancel);
 	}
 
@@ -144,12 +133,12 @@ impl SubHandler {
 	}
 
 	pub fn pause(&mut self) {
-		PAUSED.store(true, Relaxed);
+		set_paused(true);
 		self.send(SubEvent::Pause);
 	}
 
 	pub fn cancel_pause(&self) {
-		PAUSED.store(false, Relaxed);
+		set_paused(false);
 		self.send(SubEvent::PauseCancel);
 	}
 }
@@ -220,9 +209,9 @@ async fn term_task(tx: Sender) {
 }
 
 async fn count_down_task(tx: Sender, cnt: u8) {
-	for n in (0..cnt).rev() {
+	for _ in 0..cnt {
 		sleep(Duration::from_secs(1)).await;
-		tx.send(Event::CountDown(n)).unwrap();
+		tx.send(Event::CountDown).unwrap();
 	}
 }
 
@@ -328,7 +317,7 @@ async fn lock_task(tx: Sender, mut sub_rx: SubReceiver) {
 				if is_paused() {
 					continue;
 				}
-				LOCKED.store(false, Relaxed);
+				set_locked(false);
 				tx.send(Event::LockEnd).unwrap();
 				break;
 			}

@@ -1,5 +1,9 @@
 use std::slice::Iter;
 
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Deserialize, Serialize)]
+#[serde(transparent)]
 pub struct Scores(Vec<u32>);
 
 impl Scores {

@@ -17,12 +17,16 @@ impl PauseMenu {
 }
 
 impl Menu for PauseMenu {
-	fn cursor(&mut self) -> &mut usize {
+	fn cursor_mut(&mut self) -> &mut usize {
 		&mut self.cursor
 	}
 
-	fn end(&self) -> usize {
-		self.items.len() - 1
+	fn cursor(&self) -> usize {
+		self.cursor
+	}
+
+	fn items(&self) -> &[&'static str] {
+		&self.items
 	}
 }
 
