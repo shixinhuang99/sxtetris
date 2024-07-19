@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use serde::{Deserialize, Serialize};
 
-use super::Tetromino;
+use super::{particles::Particles, Tetromino};
 use crate::{
 	common::{Board, Position, Reset, TetrominoKind},
 	consts::{MAIN_BOARD_COLS, MAIN_BOARD_ROWS},
@@ -15,6 +15,8 @@ pub struct MainBoard {
 	cells: VecDeque<Vec<Option<TetrominoKind>>>,
 	#[serde(skip)]
 	pub line_clear: LineClear,
+	#[serde(skip)]
+	pub particles: Particles,
 }
 
 #[derive(Clone, Default)]
@@ -32,6 +34,7 @@ impl MainBoard {
 				MAIN_BOARD_ROWS
 			]),
 			line_clear: LineClear::default(),
+			particles: Particles::default(),
 		}
 	}
 
@@ -67,40 +70,29 @@ impl MainBoard {
 	}
 
 	fn clear_cell(&mut self) {
-		for (y, line) in self.cells.iter_mut().enumerate() {
-			if !self.line_clear.lines.contains(&y) {
-				continue;
-			}
-			for (x, cell) in line.iter_mut().enumerate() {
-				if x == self.line_clear.curosr {
-					*cell = None;
-					// todo: confetti
-				}
-			}
-		}
-	}
-
-	fn gen_new_lines(&mut self) {
 		for line in &self.line_clear.lines {
-			self.cells.remove(*line);
-			self.cells.push_front(vec![None; MAIN_BOARD_COLS]);
+			self.cells[*line][self.line_clear.curosr] = None;
+			self.particles.push_point(self.line_clear.curosr, *line);
 		}
-		self.line_clear.lines.clear();
 	}
 
 	pub fn update_line_clear(&mut self) -> bool {
-		// todo: confetti
 		self.clear_cell();
+		self.line_clear.curosr += 1;
 
 		if self.line_clear.curosr >= MAIN_BOARD_COLS {
 			self.line_clear.curosr = 0;
 			self.line_clear.in_progress = false;
-			self.gen_new_lines();
-			return true;
-		}
+			for line in &self.line_clear.lines {
+				self.cells.remove(*line);
+				self.cells.push_front(vec![None; MAIN_BOARD_COLS]);
+			}
+			self.line_clear.lines.clear();
 
-		self.line_clear.curosr += 1;
-		false
+			true
+		} else {
+			false
+		}
 	}
 }
 

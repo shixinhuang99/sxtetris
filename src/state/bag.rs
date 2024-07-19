@@ -12,15 +12,16 @@ pub struct Bag {
 impl Bag {
 	pub fn new() -> Self {
 		Self {
-			kinds: vec![
-				TetrominoKind::I,
-				TetrominoKind::J,
-				TetrominoKind::L,
-				TetrominoKind::O,
-				TetrominoKind::S,
-				TetrominoKind::T,
-				TetrominoKind::Z,
-			],
+			// kinds: vec![
+			// 	TetrominoKind::I,
+			// 	TetrominoKind::J,
+			// 	TetrominoKind::L,
+			// 	TetrominoKind::O,
+			// 	TetrominoKind::S,
+			// 	TetrominoKind::T,
+			// 	TetrominoKind::Z,
+			// ],
+			kinds: vec![TetrominoKind::O; 7],
 			cursor: 0,
 			last: None,
 		}

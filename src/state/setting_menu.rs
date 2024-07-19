@@ -8,7 +8,7 @@ pub struct SettingMenu {
 impl SettingMenu {
 	pub fn new() -> Self {
 		Self {
-			items: vec!["PARTICLES", "MUSIC", "SOUND"],
+			items: vec!["PARTICLE", "MUSIC", "SOUND"],
 			cursor: 0,
 		}
 	}
@@ -17,7 +17,7 @@ impl SettingMenu {
 		use setting_menu_idx::*;
 
 		match self.cursor {
-			PARTICLES => (),
+			PARTICLE => (),
 			MUSIC => (),
 			SOUND => (),
 			_ => (),
@@ -40,7 +40,7 @@ impl Menu for SettingMenu {
 }
 
 mod setting_menu_idx {
-	pub const PARTICLES: usize = 0;
+	pub const PARTICLE: usize = 0;
 	pub const MUSIC: usize = 1;
 	pub const SOUND: usize = 2;
 }

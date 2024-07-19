@@ -4,6 +4,7 @@ pub mod game_over_menu;
 pub mod ghost_tetromino;
 pub mod main_board;
 pub mod next_board;
+pub mod particles;
 pub mod pause_menu;
 pub mod scores;
 pub mod setting_menu;
@@ -373,6 +374,7 @@ impl State {
 	}
 
 	pub fn update_line_clear(&mut self) {
+		self.board.borrow_mut().particles.update();
 		if !self.board.borrow().line_clear.in_progress {
 			return;
 		}

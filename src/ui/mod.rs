@@ -6,6 +6,7 @@ mod game_over_menu;
 mod help;
 mod menu;
 mod next_board;
+mod particles;
 mod pause_menu;
 mod scores;
 mod setting_menu;
@@ -18,6 +19,7 @@ use board::main_board;
 use count_down::count_down;
 use game_over_menu::game_over_menu;
 use help::help;
+use particles::particles;
 use pause_menu::pause_menu;
 use ratatui::{
 	layout::{Constraint, Flex, Layout},
@@ -86,6 +88,8 @@ pub fn ui(f: &mut Frame, state: &mut State) {
 		if state.count_down != 0 {
 			count_down(f, state.count_down);
 		}
+
+		particles(f, left_area, &mut state.board.borrow_mut().particles);
 	}
 
 	if state.focus.contains(Scene::GameOverMenu) {

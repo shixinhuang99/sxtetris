@@ -21,7 +21,7 @@ pub fn main_board(
 	cell_height: u16,
 	cell_width: u16,
 ) {
-	let board = state.board.borrow();
+	let mut board = state.board.borrow_mut();
 
 	let v_chunks = Layout::vertical(
 		[Constraint::Length(cell_height); MAIN_BOARD_VISIBLE_ROWS],
@@ -50,6 +50,13 @@ pub fn main_board(
 				tetromino_cell(f, h_area, kind);
 			} else {
 				empty_cell(f, h_area);
+			}
+
+			if board.particles.check_and_remove_point(x, y) {
+				board.particles.spawn(
+					h_area.x + h_area.width / 2,
+					h_area.y + h_area.height / 2,
+				);
 			}
 		}
 	}
