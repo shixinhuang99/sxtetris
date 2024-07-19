@@ -7,7 +7,7 @@ use super::cell::tetromino_cell;
 use crate::{
 	common::Board,
 	consts::{NEXT_BOARD_COLS, NEXT_BOARD_ROWS},
-	new_state::next_board::NextBoard,
+	state::next_board::NextBoard,
 };
 
 pub fn next_board(

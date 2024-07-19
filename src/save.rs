@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
 	consts::APP_NAME,
-	new_state::{
+	state::{
 		bag::Bag, focus::Scene, main_board::MainBoard, next_board::NextBoard,
 		scores::Scores, stats::Stats, tetromino::Tetromino, State,
 	},

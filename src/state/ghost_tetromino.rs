@@ -7,10 +7,7 @@ pub struct GhostTetromino {
 }
 
 impl GhostTetromino {
-	pub fn new(kind: TetrominoKind, position: Position) -> Self {
-		Self {
-			kind,
-			position,
-		}
+	pub fn hidden(&mut self) {
+		self.position = Position::default();
 	}
 }

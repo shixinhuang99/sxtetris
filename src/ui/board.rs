@@ -11,7 +11,7 @@ use crate::{
 	consts::{
 		MAIN_BOARD_BUFFER_ROWS, MAIN_BOARD_COLS, MAIN_BOARD_VISIBLE_ROWS,
 	},
-	new_state::State,
+	state::State,
 };
 
 pub fn main_board(

@@ -35,7 +35,7 @@ use crate::{
 		MAIN_BOARD_COLS, MAIN_BOARD_VISIBLE_ROWS, MIN_CELL_HEIGHT,
 		MIN_CELL_WIDTH,
 	},
-	new_state::{focus::Scene, State},
+	state::{focus::Scene, State},
 };
 
 const ROWS: u16 = MAIN_BOARD_VISIBLE_ROWS as u16;

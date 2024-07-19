@@ -7,7 +7,7 @@ use ratatui::{
 use tui_big_text::{BigText, PixelSize};
 
 use super::{menu::menu, utils::centered_rect};
-use crate::{consts::APP_NAME, new_state::start_menu::StartMenu};
+use crate::{consts::APP_NAME, state::start_menu::StartMenu};
 
 pub fn start_menu(f: &mut Frame, rect: Rect, start_menu: &StartMenu) {
 	let outer_area = centered_rect(

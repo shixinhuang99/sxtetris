@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::common::Reset;
+
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Stats {
 	pub level: u32,
@@ -16,13 +18,6 @@ impl Stats {
 			lines: 0,
 			combo: -1,
 		}
-	}
-
-	pub fn reset(&mut self) {
-		self.level = 1;
-		self.score = 0;
-		self.lines = 0;
-		self.combo = -1;
 	}
 
 	pub fn update(&mut self, rows_len: usize) {
@@ -52,5 +47,11 @@ impl Stats {
 		if self.combo > 0 {
 			self.score += 50 * self.combo as u32 * self.level;
 		}
+	}
+}
+
+impl Reset for Stats {
+	fn reset(&mut self) {
+		*self = Self::new();
 	}
 }

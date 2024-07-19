@@ -1,7 +1,6 @@
 use std::{
 	array::IntoIter,
 	ops::{Add, Sub},
-	slice::Iter,
 };
 
 use serde::{Deserialize, Serialize};
@@ -25,10 +24,6 @@ impl Position {
 			Point::new(raw_points[2]),
 			Point::new(raw_points[3]),
 		])
-	}
-
-	pub fn iter(&self) -> Iter<Point<i8>> {
-		self.0.iter()
 	}
 
 	pub fn into_iter(self) -> IntoIter<Point<i8>, 4> {

@@ -10,7 +10,7 @@ use super::{
 	menu::menu,
 	utils::{rounded_block, Popup},
 };
-use crate::new_state::game_over_menu::GameOverMenu;
+use crate::state::game_over_menu::GameOverMenu;
 
 pub fn game_over_menu(f: &mut Frame, game_over_menu: &GameOverMenu) {
 	let new_score = game_over_menu.new_score.clone();

@@ -88,19 +88,19 @@ impl MainBoard {
 		self.line_clear.lines.clear();
 	}
 
-	pub fn update_line_clear(&mut self) {
+	pub fn update_line_clear(&mut self) -> bool {
 		// todo: confetti
-		if !self.line_clear.in_progress {
-			return;
-		}
 		self.clear_cell();
+
 		if self.line_clear.curosr >= MAIN_BOARD_COLS {
 			self.line_clear.curosr = 0;
 			self.line_clear.in_progress = false;
 			self.gen_new_lines();
-		} else {
-			self.line_clear.curosr += 1;
+			return true;
 		}
+
+		self.line_clear.curosr += 1;
+		false
 	}
 }
 

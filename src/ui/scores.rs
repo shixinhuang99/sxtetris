@@ -6,7 +6,7 @@ use ratatui::{
 use tui_big_text::{BigText, PixelSize};
 
 use super::utils::Popup;
-use crate::new_state::scores::Scores;
+use crate::state::scores::Scores;
 
 pub fn scores(f: &mut Frame, scores: &Scores) {
 	let popup = Popup::new(58, 42).title("HIGH SCORES").render(f);

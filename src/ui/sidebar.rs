@@ -8,7 +8,7 @@ use tui_big_text::{BigText, PixelSize};
 use Constraint::{Length, Ratio};
 
 use super::{next_board::next_board, utils::rounded_block};
-use crate::{consts::NEXT_BOARD_ROWS, new_state::State};
+use crate::{consts::NEXT_BOARD_ROWS, state::State};
 
 pub fn sidebar(
 	f: &mut Frame,

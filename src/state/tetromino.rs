@@ -1,317 +1,276 @@
 use serde::{Deserialize, Serialize};
 
-use super::{
-	point::{Point, Points},
-	tetromino_type::TetrominoType,
+use super::{MainBoard, SharedMainBoard};
+use crate::{
+	common::{pos, Position, TetrominoKind},
+	consts::MAIN_BOARD_BUFFER_ROWS,
 };
-use crate::consts::BOARD_VISIBLE_ROWS;
-
-const BOARD_VISIBLE_ROWS_I32: i32 = BOARD_VISIBLE_ROWS as i32;
-
-#[derive(PartialEq)]
-pub enum TetrominoAction {
-	Left,
-	Right,
-	SoftDrop,
-	HardDrop,
-	RotateRight,
-	RotateLeft,
-}
-
-#[derive(Clone, Copy, Deserialize, Serialize)]
-pub enum RotateDeg {
-	Zero,
-	R,
-	L,
-	Two,
-}
-
-impl From<usize> for RotateDeg {
-	fn from(value: usize) -> Self {
-		match value {
-			0 => RotateDeg::Zero,
-			1 => RotateDeg::R,
-			3 => RotateDeg::L,
-			2 => RotateDeg::Two,
-			_ => unreachable!(),
-		}
-	}
-}
-
-impl From<RotateDeg> for usize {
-	fn from(value: RotateDeg) -> Self {
-		match value {
-			RotateDeg::Zero => 0,
-			RotateDeg::R => 1,
-			RotateDeg::L => 3,
-			RotateDeg::Two => 2,
-		}
-	}
-}
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Tetromino {
-	pub tm_type: TetrominoType,
-	pub points: Points,
-	pub rotate_deg: RotateDeg,
+	pub kind: TetrominoKind,
+	pub position: Position,
+	orientation: Orientation,
+	#[serde(skip)]
+	pub blink: bool,
+	#[serde(skip, default = "MainBoard::new_shared")]
+	board: SharedMainBoard,
 }
 
 impl Tetromino {
-	pub fn new(tm_type: TetrominoType) -> Self {
-		let mut tm = Self::new_preview(tm_type);
-
-		tm.points.update(|p| p.1 += BOARD_VISIBLE_ROWS_I32);
-
-		tm
-	}
-
-	pub fn new_preview(tm_type: TetrominoType) -> Self {
-		let mut points = Points::new(tm_type.init_points(0));
-
-		points.update(|p| p.0 += 3);
-
+	pub fn new(board: SharedMainBoard) -> Self {
 		Self {
-			tm_type,
-			points,
-			rotate_deg: RotateDeg::Zero,
+			kind: TetrominoKind::default(),
+			position: Position::default(),
+			blink: false,
+			orientation: Orientation::default(),
+			board,
 		}
 	}
 
-	pub fn can_move<F>(
-		&self,
-		action: &TetrominoAction,
-		is_collision: F,
-	) -> Option<Points>
-	where
-		F: Fn(&Points) -> bool,
-	{
-		let mut points = self.points.clone();
+	pub fn set_next(&mut self, kind: TetrominoKind) {
+		self.kind = kind;
+		self.orientation = Orientation::default();
+		self.position = kind.init_position(self.orientation.into());
+		self.position.update(|p| {
+			p.x += 3;
+			p.y += MAIN_BOARD_BUFFER_ROWS as i8;
+		});
+		self.blink = false;
+	}
 
-		let moved = match action {
+	pub fn set_board(&mut self, board: SharedMainBoard) {
+		self.board = board;
+	}
+
+	pub fn walk(&mut self, action: TetrominoAction) -> bool {
+		let mut position = self.position.clone();
+
+		let can_walk = match action {
 			TetrominoAction::SoftDrop => {
-				if points.is_touched_bottom() {
+				if position.is_touch_bottom() {
 					false
 				} else {
-					points.update(|p| p.1 += 1);
+					position.update(|p| p.y += 1);
 					true
 				}
 			}
-			TetrominoAction::Left => {
-				if points.is_touched_left() {
+			TetrominoAction::WalkLeft => {
+				if position.is_touch_left() {
 					false
 				} else {
-					points.update(|p| p.0 -= 1);
+					position.update(|p| p.x -= 1);
 					true
 				}
 			}
-			TetrominoAction::Right => {
-				if points.is_touched_right() {
+			TetrominoAction::WalkRight => {
+				if position.is_touch_right() {
 					false
 				} else {
-					points.update(|p| p.0 += 1);
+					position.update(|p| p.x += 1);
 					true
 				}
 			}
 			_ => unreachable!(),
 		};
 
-		if !moved || is_collision(&points) {
-			None
+		if !can_walk || self.board.borrow().is_collision(&position) {
+			false
 		} else {
-			Some(points)
+			self.position = position;
+			true
 		}
 	}
 
-	pub fn can_rotate<F>(
-		&self,
-		action: &TetrominoAction,
-		active_tm_points: &Points,
-		is_collision: F,
-	) -> Option<(Points, RotateDeg)>
-	where
-		F: Fn(&Points, &Points) -> bool,
-	{
-		use RotateDeg::*;
+	pub fn rotate(&mut self, action: TetrominoAction) -> bool {
+		use Orientation::*;
 
-		let init_points = self.tm_type.init_points(self.rotate_deg.into());
+		let init_position = self.kind.init_position(self.orientation.into());
+		let diff = self.position.clone() - init_position;
 
-		let mut diff: [Point; 4] = [(0, 0); 4];
-
-		for i in 0..4 {
-			diff[i].0 = self.points.value[i].0 - init_points[i].0;
-			diff[i].1 = self.points.value[i].1 - init_points[i].1;
-		}
-
-		let next_deg = match action {
+		let next_orientation = match action {
 			TetrominoAction::RotateRight => {
-				match self.rotate_deg {
-					Zero => R,
-					R => Two,
-					Two => L,
-					L => Zero,
+				match self.orientation {
+					N => E,
+					E => S,
+					S => W,
+					W => N,
 				}
 			}
 			TetrominoAction::RotateLeft => {
-				match self.rotate_deg {
-					Zero => L,
-					L => Two,
-					Two => R,
-					R => Zero,
+				match self.orientation {
+					N => W,
+					W => S,
+					S => E,
+					E => N,
 				}
 			}
 			_ => unreachable!(),
 		};
 
-		let mut fisrt_rotate_points =
-			Points::new(self.tm_type.init_points(next_deg.into()));
+		let init_position = self.kind.init_position(next_orientation.into());
+		let rotate_position = init_position + diff;
 
-		for (i, v) in diff.into_iter().enumerate() {
-			fisrt_rotate_points.value[i].0 += v.0;
-			fisrt_rotate_points.value[i].1 += v.1;
-		}
+		let mut rotated = false;
 
-		if fisrt_rotate_points.is_out_of_board()
-			|| is_collision(&fisrt_rotate_points, active_tm_points)
+		if rotate_position.is_outside_the_board()
+			|| self.board.borrow().is_collision(&rotate_position)
 		{
-			let kick_offest = match (&self.rotate_deg, next_deg) {
-				(Zero, R) => {
-					if self.tm_type == TetrominoType::I {
-						kick_map::i::ZERO_R
+			let kick_offest = match (&self.orientation, next_orientation) {
+				(N, E) => {
+					if self.kind == TetrominoKind::I {
+						kick_map_i::NE
 					} else {
-						kick_map::jlstz::ZERO_R
+						kick_map_jlstz::NE
 					}
 				}
-				(R, Zero) => {
-					if self.tm_type == TetrominoType::I {
-						kick_map::i::R_ZERO
+				(E, N) => {
+					if self.kind == TetrominoKind::I {
+						kick_map_i::EN
 					} else {
-						kick_map::jlstz::R_ZERO
+						kick_map_jlstz::EN
 					}
 				}
-				(R, Two) => {
-					if self.tm_type == TetrominoType::I {
-						kick_map::i::R_TWO
+				(E, S) => {
+					if self.kind == TetrominoKind::I {
+						kick_map_i::ES
 					} else {
-						kick_map::jlstz::R_TWO
+						kick_map_jlstz::ES
 					}
 				}
-				(Two, R) => {
-					if self.tm_type == TetrominoType::I {
-						kick_map::i::TWO_R
+				(S, E) => {
+					if self.kind == TetrominoKind::I {
+						kick_map_i::SE
 					} else {
-						kick_map::jlstz::TWO_R
+						kick_map_jlstz::SE
 					}
 				}
-				(Two, L) => {
-					if self.tm_type == TetrominoType::I {
-						kick_map::i::TWO_L
+				(S, W) => {
+					if self.kind == TetrominoKind::I {
+						kick_map_i::SW
 					} else {
-						kick_map::jlstz::TWO_L
+						kick_map_jlstz::SW
 					}
 				}
-				(L, Two) => {
-					if self.tm_type == TetrominoType::I {
-						kick_map::i::L_TWO
+				(W, S) => {
+					if self.kind == TetrominoKind::I {
+						kick_map_i::WS
 					} else {
-						kick_map::jlstz::L_TWO
+						kick_map_jlstz::WS
 					}
 				}
-				(L, Zero) => {
-					if self.tm_type == TetrominoType::I {
-						kick_map::i::L_ZERO
+				(W, N) => {
+					if self.kind == TetrominoKind::I {
+						kick_map_i::WN
 					} else {
-						kick_map::jlstz::L_ZERO
+						kick_map_jlstz::WN
 					}
 				}
-				(Zero, L) => {
-					if self.tm_type == TetrominoType::I {
-						kick_map::i::ZERO_L
+				(N, W) => {
+					if self.kind == TetrominoKind::I {
+						kick_map_i::NW
 					} else {
-						kick_map::jlstz::ZERO_L
+						kick_map_jlstz::NW
 					}
 				}
 				_ => unreachable!(),
 			};
 
-			for offest in kick_offest {
-				let mut kick_points = fisrt_rotate_points.clone();
+			for offest in kick_offest.into_iter() {
+				let kick_position = rotate_position.clone() + offest;
 
-				kick_points.update(|p| {
-					p.0 += offest.0;
-					p.1 += offest.1;
-				});
-
-				if kick_points.is_out_of_board()
-					|| is_collision(&kick_points, active_tm_points)
-					|| is_collision(&kick_points, &fisrt_rotate_points)
+				if kick_position.is_outside_the_board()
+					|| self.board.borrow().is_collision(&kick_position)
 				{
 					continue;
 				}
 
-				if self.points != kick_points {
-					return Some((kick_points, next_deg));
+				if self.position != kick_position {
+					self.position = kick_position;
+					self.orientation = next_orientation;
+					rotated = true;
 				}
 
 				break;
 			}
-
-			return None;
+		} else if self.position != rotate_position {
+			self.position = rotate_position;
+			self.orientation = next_orientation;
+			rotated = true;
 		}
 
-		if self.points != fisrt_rotate_points {
-			Some((fisrt_rotate_points, next_deg))
-		} else {
-			None
-		}
+		rotated
 	}
 
-	pub fn same_position(&self, other: &Self) -> bool {
-		self.points == other.points
+	pub fn hidden(&mut self) {
+		self.position = Position::default();
 	}
 }
 
-mod kick_map {
-	use super::Point;
+#[derive(Clone, Copy, Default, Deserialize, Serialize)]
+enum Orientation {
+	#[default]
+	N,
+	E,
+	W,
+	S,
+}
 
-	type KickOffest = [Point; 4];
-
-	pub mod jlstz {
-		use super::KickOffest;
-
-		pub const ZERO_R: KickOffest = [(-1, 0), (-1, 1), (0, -2), (-1, -2)];
-
-		pub const R_ZERO: KickOffest = [(1, 0), (1, -1), (0, 2), (1, 2)];
-
-		pub const R_TWO: KickOffest = [(1, 0), (1, -1), (0, 2), (1, 2)];
-
-		pub const TWO_R: KickOffest = [(-1, 0), (-1, 1), (0, -2), (-1, -2)];
-
-		pub const TWO_L: KickOffest = [(1, 0), (1, 1), (0, -2), (1, -2)];
-
-		pub const L_TWO: KickOffest = [(-1, 0), (-1, -1), (0, 2), (-1, 2)];
-
-		pub const L_ZERO: KickOffest = [(-1, 0), (-1, -1), (0, 2), (-1, 2)];
-
-		pub const ZERO_L: KickOffest = [(1, 0), (1, 1), (0, -2), (1, -2)];
+impl From<Orientation> for usize {
+	fn from(value: Orientation) -> Self {
+		match value {
+			Orientation::N => 0,
+			Orientation::E => 1,
+			Orientation::S => 2,
+			Orientation::W => 3,
+		}
 	}
+}
 
-	pub mod i {
-		use super::KickOffest;
+pub enum TetrominoAction {
+	WalkLeft,
+	WalkRight,
+	SoftDrop,
+	RotateRight,
+	RotateLeft,
+}
 
-		pub const ZERO_R: KickOffest = [(-2, 0), (1, 0), (-2, -1), (1, 2)];
+mod kick_map_jlstz {
+	use super::{pos, Position};
 
-		pub const R_ZERO: KickOffest = [(2, 0), (-1, 0), (2, 1), (-1, -2)];
+	pub const NE: Position = pos([(-1, 0), (-1, 1), (0, -2), (-1, -2)]);
 
-		pub const R_TWO: KickOffest = [(-1, 0), (2, 0), (-1, 2), (2, -1)];
+	pub const EN: Position = pos([(1, 0), (1, -1), (0, 2), (1, 2)]);
 
-		pub const TWO_R: KickOffest = [(1, 0), (-2, 0), (1, -2), (-2, 1)];
+	pub const ES: Position = pos([(1, 0), (1, -1), (0, 2), (1, 2)]);
 
-		pub const TWO_L: KickOffest = [(2, 0), (-1, 0), (2, 1), (-1, -2)];
+	pub const SE: Position = pos([(-1, 0), (-1, 1), (0, -2), (-1, -2)]);
 
-		pub const L_TWO: KickOffest = [(-2, 0), (1, 0), (-2, -1), (1, 2)];
+	pub const SW: Position = pos([(1, 0), (1, 1), (0, -2), (1, -2)]);
 
-		pub const L_ZERO: KickOffest = [(1, 0), (-2, 0), (1, -2), (-2, 1)];
+	pub const WS: Position = pos([(-1, 0), (-1, -1), (0, 2), (-1, 2)]);
 
-		pub const ZERO_L: KickOffest = [(-1, 0), (2, 0), (-1, 2), (2, -1)];
-	}
+	pub const WN: Position = pos([(-1, 0), (-1, -1), (0, 2), (-1, 2)]);
+
+	pub const NW: Position = pos([(1, 0), (1, 1), (0, -2), (1, -2)]);
+}
+
+mod kick_map_i {
+	use super::{pos, Position};
+
+	pub const NE: Position = pos([(-2, 0), (1, 0), (-2, -1), (1, 2)]);
+
+	pub const EN: Position = pos([(2, 0), (-1, 0), (2, 1), (-1, -2)]);
+
+	pub const ES: Position = pos([(-1, 0), (2, 0), (-1, 2), (2, -1)]);
+
+	pub const SE: Position = pos([(1, 0), (-2, 0), (1, -2), (-2, 1)]);
+
+	pub const SW: Position = pos([(2, 0), (-1, 0), (2, 1), (-1, -2)]);
+
+	pub const WS: Position = pos([(-2, 0), (1, 0), (-2, -1), (1, 2)]);
+
+	pub const WN: Position = pos([(1, 0), (-2, 0), (1, -2), (-2, 1)]);
+
+	pub const NW: Position = pos([(-1, 0), (2, 0), (-1, 2), (2, -1)]);
 }

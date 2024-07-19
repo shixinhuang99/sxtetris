@@ -1,7 +1,7 @@
 use ratatui::{widgets::Padding, Frame};
 
 use super::{menu::menu, utils::Popup};
-use crate::new_state::setting_menu::SettingMenu;
+use crate::state::setting_menu::SettingMenu;
 
 pub fn setting_menu(f: &mut Frame, setting_menu: &SettingMenu) {
 	let popup = Popup::new(60, 22)

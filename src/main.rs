@@ -1,11 +1,10 @@
 mod app;
-mod audio;
 mod common;
 mod consts;
 mod global;
 mod handler;
-mod new_state;
 mod save;
+mod state;
 mod term;
 mod ui;
 

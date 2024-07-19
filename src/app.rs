@@ -2,8 +2,8 @@ use anyhow::Result;
 
 use crate::{
 	handler::{Event, MainHandler},
-	new_state::State,
 	save::Save,
+	state::State,
 	term::Term,
 	ui::ui,
 };
@@ -41,7 +41,7 @@ impl App {
 			}
 
 			if event == Event::Tick {
-				// self.state.update_clear_rows_progress();
+				self.state.update_line_clear();
 				self.term.draw(|f| {
 					ui(f, &mut self.state);
 				})?;
@@ -54,8 +54,6 @@ impl App {
 				break;
 			}
 		}
-
-		// self.state.audio.stop_all();
 
 		self.save.write_state_to_save(&self.state);
 
