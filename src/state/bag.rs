@@ -1,63 +1,54 @@
 use serde::{Deserialize, Serialize};
 
-use super::TetrominoType;
+use crate::common::{Reset, TetrominoKind};
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Bag {
-	tm_types: [TetrominoType; 7],
+	kinds: Vec<TetrominoKind>,
 	cursor: usize,
-	last: Option<TetrominoType>,
-	#[serde(skip)]
-	count: u8,
+	last: Option<TetrominoKind>,
 }
 
 impl Bag {
 	pub fn new() -> Self {
-		let mut bag = Self {
-			tm_types: [
-				TetrominoType::I,
-				TetrominoType::J,
-				TetrominoType::L,
-				TetrominoType::O,
-				TetrominoType::S,
-				TetrominoType::T,
-				TetrominoType::Z,
+		Self {
+			kinds: vec![
+				TetrominoKind::I,
+				TetrominoKind::J,
+				TetrominoKind::L,
+				TetrominoKind::O,
+				TetrominoKind::S,
+				TetrominoKind::T,
+				TetrominoKind::Z,
 			],
 			cursor: 0,
 			last: None,
-			count: 0,
-		};
-
-		bag.shuffle();
-
-		bag
+		}
 	}
 
 	fn shuffle(&mut self) {
 		self.cursor = 0;
-		fastrand::shuffle(self.tm_types.as_mut_slice());
-		if self.last.is_some_and(|last| last == self.tm_types[0])
-			&& self.count < 1
-		{
-			self.count += 1;
-			return self.shuffle();
+		fastrand::shuffle(self.kinds.as_mut_slice());
+		if self.last.is_some_and(|last| last == self.kinds[0]) {
+			self.kinds.swap(0, 1);
 		}
-		self.count = 0;
 	}
 
-	pub fn next(&mut self) -> TetrominoType {
-		if self.cursor >= self.tm_types.len() {
+	pub fn next(&mut self) -> TetrominoKind {
+		if self.cursor >= self.kinds.len() {
 			self.shuffle();
 		}
-		let tm_type = self.tm_types[self.cursor];
+		let kind = self.kinds[self.cursor];
 		self.cursor += 1;
-		self.last = Some(tm_type);
+		self.last = Some(kind);
 
-		tm_type
+		kind
 	}
+}
 
-	pub fn reset(&mut self) {
+impl Reset for Bag {
+	fn reset(&mut self) {
+		*self = Self::new();
 		self.shuffle();
-		self.last = None;
 	}
 }

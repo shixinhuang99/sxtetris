@@ -15,7 +15,6 @@ use ratatui::{backend::CrosstermBackend, Frame, Terminal};
 
 use crate::consts::APP_NAME;
 
-#[derive(Debug)]
 pub struct Term {
 	terminal: Terminal<CrosstermBackend<Stderr>>,
 }

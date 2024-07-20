@@ -1,10 +1,10 @@
 use ratatui::Frame;
 
-use super::{list::list, utils::Popup};
-use crate::state::ListState;
+use super::{menu::menu, utils::Popup};
+use crate::state::pause_menu::PauseMenu;
 
-pub fn pause_menu(f: &mut Frame, list_state: &ListState) {
+pub fn pause_menu(f: &mut Frame, pause_menu: &PauseMenu) {
 	let popup = Popup::new(44, 36).title("PAUSED").render(f);
 
-	list(f, popup, list_state);
+	menu(f, popup, pause_menu);
 }

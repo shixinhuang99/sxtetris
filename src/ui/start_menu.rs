@@ -6,10 +6,10 @@ use ratatui::{
 };
 use tui_big_text::{BigText, PixelSize};
 
-use super::{list::list, utils::centered_rect};
-use crate::{consts::APP_NAME, state::ListState};
+use super::{menu::menu, utils::centered_rect};
+use crate::{consts::APP_NAME, state::start_menu::StartMenu};
 
-pub fn start_menu(f: &mut Frame, rect: Rect, list_state: &ListState) {
+pub fn start_menu(f: &mut Frame, rect: Rect, start_menu: &StartMenu) {
 	let outer_area = centered_rect(
 		rect,
 		Constraint::Percentage(60),
@@ -40,7 +40,7 @@ pub fn start_menu(f: &mut Frame, rect: Rect, list_state: &ListState) {
 
 	f.render_widget(title, title_area);
 
-	list(f, chunks[1], list_state);
+	menu(f, chunks[1], start_menu);
 }
 
 const COLORS: [Color; 8] = [

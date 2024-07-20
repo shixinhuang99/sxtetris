@@ -1,27 +1,27 @@
-use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
-
 use crossterm::event::{
-	Event, EventStream, KeyCode, KeyEventKind, KeyModifiers,
+	Event as TermEvent, EventStream, KeyCode, KeyEventKind, KeyModifiers,
 };
 use tokio::{
 	sync::{
 		broadcast,
 		mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
 	},
+	task::JoinSet,
 	time::{interval, sleep, Duration, Instant, Interval},
 };
 
-use crate::consts::FRAME_RATE_SECS;
+use crate::{
+	consts::FRAME_RATE_SECS,
+	global::{is_locked, is_paused, set_locked, set_paused},
+};
 
-type Sender = UnboundedSender<GameEvent>;
-type Receiver = UnboundedReceiver<GameEvent>;
+type Sender = UnboundedSender<Event>;
+type Receiver = UnboundedReceiver<Event>;
 type SubSender = broadcast::Sender<SubEvent>;
 type SubReceiver = broadcast::Receiver<SubEvent>;
 
-const MAX_GRAVITY_LEVEL: u32 = 15;
-
-#[derive(PartialEq)]
-pub enum GameEvent {
+#[derive(PartialEq, Eq)]
+pub enum Event {
 	Tick,
 	FocusLost,
 	CtrlC,
@@ -36,7 +36,7 @@ pub enum GameEvent {
 	Z,
 	Gravity,
 	LockEnd,
-	CountDown(u8),
+	CountDown,
 	Blink,
 }
 
@@ -51,42 +51,38 @@ enum SubEvent {
 	LockRefresh,
 }
 
-static PAUSED: AtomicBool = AtomicBool::new(false);
-
-static LOCKED: AtomicBool = AtomicBool::new(false);
-
-pub fn is_paused() -> bool {
-	PAUSED.load(Relaxed)
-}
-
-pub fn is_locked() -> bool {
-	LOCKED.load(Relaxed)
-}
-
 pub struct MainHandler {
 	tx: Sender,
 	rx: Receiver,
+	set: JoinSet<()>,
 }
 
 impl MainHandler {
 	pub fn new() -> Self {
 		let (tx, rx) = unbounded_channel();
 
-		tokio::spawn(tick_task(tx.clone()));
-		tokio::spawn(term_task(tx.clone()));
-
 		Self {
 			tx,
 			rx,
+			set: JoinSet::new(),
 		}
 	}
 
-	pub async fn recv(&mut self) -> Option<GameEvent> {
+	pub async fn recv(&mut self) -> Option<Event> {
 		self.rx.recv().await
 	}
 
 	pub fn create_sub_handler(&self) -> SubHandler {
 		SubHandler::new(self.tx.clone())
+	}
+
+	pub fn init_task(&mut self) {
+		self.set.spawn(tick_task(self.tx.clone()));
+		self.set.spawn(term_task(self.tx.clone()));
+	}
+
+	pub async fn shutdown(&mut self) {
+		let _ = self.set.shutdown().await;
 	}
 }
 
@@ -94,6 +90,7 @@ pub struct SubHandler {
 	tx: Sender,
 	sub_tx: SubSender,
 	_sub_rx: SubReceiver,
+	set: JoinSet<()>,
 }
 
 impl SubHandler {
@@ -104,20 +101,27 @@ impl SubHandler {
 			tx,
 			sub_tx,
 			_sub_rx,
+			set: JoinSet::new(),
 		}
 	}
 
-	pub fn spawn_count_down_task(&self, cnt: u8) {
-		tokio::spawn(count_down_task(self.tx.clone(), cnt));
+	pub async fn shutdown(&mut self) {
+		let _ = self.set.shutdown().await;
 	}
 
-	pub fn spawn_gravity_task(&self) {
-		tokio::spawn(gravity_task(self.tx.clone(), self.sub_tx.subscribe()));
+	pub fn start_count_down(&mut self, cnt: u8) {
+		self.set.spawn(count_down_task(self.tx.clone(), cnt));
 	}
 
-	pub fn spawn_lock_task(&self) {
-		LOCKED.store(true, Relaxed);
-		tokio::spawn(lock_task(self.tx.clone(), self.sub_tx.subscribe()));
+	pub fn spawn_gravity(&mut self) {
+		self.set
+			.spawn(gravity_task(self.tx.clone(), self.sub_tx.subscribe()));
+	}
+
+	pub fn start_lock(&mut self) {
+		set_locked(true);
+		self.set
+			.spawn(lock_task(self.tx.clone(), self.sub_tx.subscribe()));
 	}
 
 	fn send(&self, event: SubEvent) {
@@ -137,7 +141,7 @@ impl SubHandler {
 	}
 
 	pub fn cancel_lock(&self) {
-		LOCKED.store(false, Relaxed);
+		set_locked(false);
 		self.send(SubEvent::LockCancel);
 	}
 
@@ -146,12 +150,12 @@ impl SubHandler {
 	}
 
 	pub fn pause(&mut self) {
-		PAUSED.store(true, Relaxed);
+		set_paused(true);
 		self.send(SubEvent::Pause);
 	}
 
-	pub fn cancel_pause(&mut self) {
-		PAUSED.store(false, Relaxed);
+	pub fn cancel_pause(&self) {
+		set_paused(false);
 		self.send(SubEvent::PauseCancel);
 	}
 }
@@ -161,7 +165,7 @@ async fn tick_task(tx: Sender) {
 
 	loop {
 		tick_interval.tick().await;
-		tx.send(GameEvent::Tick).unwrap();
+		tx.send(Event::Tick).unwrap();
 	}
 }
 
@@ -176,18 +180,18 @@ async fn term_task(tx: Sender) {
 
 	while let Some(Ok(event)) = event_stream.next().await {
 		let game_event = match event {
-			Event::Key(key) if key.kind == KeyEventKind::Press => {
+			TermEvent::Key(key) if key.kind == KeyEventKind::Press => {
 				let e = match key.code {
 					KeyCode::Char('c')
 						if key.modifiers == KeyModifiers::CONTROL =>
 					{
-						GameEvent::CtrlC
+						Event::CtrlC
 					}
-					KeyCode::Up | KeyCode::Char('i') => GameEvent::Up,
-					KeyCode::Down | KeyCode::Char('k') => GameEvent::Down,
-					KeyCode::Left | KeyCode::Char('j') => GameEvent::Left,
-					KeyCode::Right | KeyCode::Char('l') => GameEvent::Right,
-					KeyCode::Enter => GameEvent::Enter,
+					KeyCode::Up | KeyCode::Char('i') => Event::Up,
+					KeyCode::Down | KeyCode::Char('k') => Event::Down,
+					KeyCode::Left | KeyCode::Char('j') => Event::Left,
+					KeyCode::Right | KeyCode::Char('l') => Event::Right,
+					KeyCode::Enter => Event::Enter,
 					KeyCode::Char(' ') => {
 						if is_last_key_space
 							&& Instant::now() - space_instant
@@ -197,15 +201,15 @@ async fn term_task(tx: Sender) {
 							continue;
 						}
 
-						GameEvent::Space
+						Event::Space
 					}
-					KeyCode::Esc => GameEvent::Esc,
-					KeyCode::Char('p') => GameEvent::P,
-					KeyCode::Char('z') => GameEvent::Z,
+					KeyCode::Esc => Event::Esc,
+					KeyCode::Char('p') => Event::P,
+					KeyCode::Char('z') => Event::Z,
 					_ => continue,
 				};
 
-				if e == GameEvent::Space {
+				if e == Event::Space {
 					is_last_key_space = true;
 					space_instant = Instant::now();
 				} else {
@@ -214,7 +218,7 @@ async fn term_task(tx: Sender) {
 
 				e
 			}
-			Event::FocusLost => GameEvent::FocusLost,
+			TermEvent::FocusLost => Event::FocusLost,
 			_ => continue,
 		};
 		tx.send(game_event).unwrap();
@@ -222,13 +226,15 @@ async fn term_task(tx: Sender) {
 }
 
 async fn count_down_task(tx: Sender, cnt: u8) {
-	for n in (0..cnt).rev() {
+	for _ in 0..cnt {
 		sleep(Duration::from_secs(1)).await;
-		tx.send(GameEvent::CountDown(n)).unwrap();
+		tx.send(Event::CountDown).unwrap();
 	}
 }
 
 async fn gravity_task(tx: Sender, mut sub_rx: SubReceiver) {
+	const MAX_GRAVITY_LEVEL: u32 = 15;
+
 	let mut paused_instant = Instant::now();
 
 	let mut level = 1;
@@ -274,7 +280,7 @@ async fn gravity_task(tx: Sender, mut sub_rx: SubReceiver) {
 					continue;
 				}
 				gravity_instant = Instant::now();
-				tx.send(GameEvent::Gravity).unwrap();
+				tx.send(Event::Gravity).unwrap();
 			}
 		}
 	}
@@ -328,8 +334,8 @@ async fn lock_task(tx: Sender, mut sub_rx: SubReceiver) {
 				if is_paused() {
 					continue;
 				}
-				LOCKED.store(false, Relaxed);
-				tx.send(GameEvent::LockEnd).unwrap();
+				set_locked(false);
+				tx.send(Event::LockEnd).unwrap();
 				break;
 			}
 			_ = blink_interval.tick() => {
@@ -337,7 +343,7 @@ async fn lock_task(tx: Sender, mut sub_rx: SubReceiver) {
 					continue;
 				}
 				blink_instant = Instant::now();
-				tx.send(GameEvent::Blink).unwrap();
+				tx.send(Event::Blink).unwrap();
 			}
 		}
 	}

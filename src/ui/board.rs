@@ -1,107 +1,63 @@
 use ratatui::{
 	layout::{Constraint, Layout, Rect},
-	style::Style,
-	widgets::{Block, BorderType},
 	Frame,
 };
 
+use super::cell::{
+	dark_tetromino_cell, empty_cell, ghost_cell, tetromino_cell,
+};
 use crate::{
-	consts::BOARD_VISIBLE_ROWS,
-	state::{State, TetrominoType},
+	common::Board,
+	consts::{
+		MAIN_BOARD_BUFFER_ROWS, MAIN_BOARD_COLS, MAIN_BOARD_VISIBLE_ROWS,
+	},
+	state::State,
 };
 
-pub fn board(
+pub fn main_board(
 	f: &mut Frame,
 	rect: Rect,
 	state: &mut State,
 	cell_height: u16,
 	cell_width: u16,
 ) {
-	let v_chunks = Layout::vertical(vec![
-		Constraint::Length(cell_height);
-		BOARD_VISIBLE_ROWS
-	])
-	.split(rect);
+	let mut board = state.board.borrow_mut();
 
-	let ghost_style = get_ghost_style(&state.active_tm.tm_type);
+	let v_chunks = Layout::vertical(
+		[Constraint::Length(cell_height); MAIN_BOARD_VISIBLE_ROWS],
+	)
+	.areas::<MAIN_BOARD_VISIBLE_ROWS>(rect);
 
-	for (y, v_area) in v_chunks.iter().enumerate() {
-		let h_chunks = Layout::horizontal(vec![
-			Constraint::Length(cell_width);
-			state.board.cols
-		])
-		.split(*v_area);
+	for (y, v_area) in v_chunks.into_iter().enumerate() {
+		let h_chunks = Layout::horizontal(
+			[Constraint::Length(cell_width); MAIN_BOARD_COLS],
+		)
+		.areas::<MAIN_BOARD_COLS>(v_area);
 
-		let y = y + BOARD_VISIBLE_ROWS;
+		let y = y + MAIN_BOARD_BUFFER_ROWS;
 
-		for (x, h_area) in h_chunks.iter().enumerate() {
-			if state.board.confetti.is_target_point(x, y) {
-				state.board.confetti.spawn_particles(
-					h_area.x,
-					h_area.y,
-					h_area.width,
-					h_area.height,
-				);
-			}
-
-			let tm_type = state.board.get_cell(x, y);
-
-			let tm_color = tm_type.color();
-			let piece_style = Style::new().fg(tm_color);
-
-			if *tm_type == TetrominoType::Ghost {
-				f.render_widget(
-					Block::bordered()
-						.border_type(BorderType::Rounded)
-						.border_style(ghost_style),
-					*h_area,
-				);
-				continue;
-			}
-
-			if *tm_type == TetrominoType::None {
-				f.render_widget(
-					Block::bordered()
-						.border_type(BorderType::Rounded)
-						.border_style(piece_style),
-					*h_area,
-				);
-				continue;
-			}
-
-			let mut outer_block =
-				Block::bordered().border_type(BorderType::QuadrantInside);
-			let inner_area = outer_block.inner(*h_area);
-			let mut inside_block =
-				Block::new().style(Style::new().bg(tm_color));
-
-			if state.active_tm.points.contains(x, y) && state.blinking {
-				let tm_dark_color = tm_type.dark_color();
-				outer_block = outer_block.style(Style::new().fg(tm_dark_color));
-				inside_block =
-					inside_block.style(Style::new().bg(tm_dark_color));
+		for (x, h_area) in h_chunks.into_iter().enumerate() {
+			if state.alive_tetromino.position.contains(x, y) {
+				let kind = &state.alive_tetromino.kind;
+				if state.alive_tetromino.blink {
+					dark_tetromino_cell(f, h_area, kind);
+				} else {
+					tetromino_cell(f, h_area, kind);
+				}
+			} else if state.ghost_tetromino.position.contains(x, y) {
+				ghost_cell(f, h_area, &state.ghost_tetromino.kind);
+			} else if let Some(kind) = board.get_kind(x, y) {
+				tetromino_cell(f, h_area, kind);
 			} else {
-				outer_block = outer_block.border_style(piece_style);
+				empty_cell(f, h_area);
 			}
 
-			f.render_widget(inside_block, inner_area);
-			f.render_widget(outer_block, *h_area);
+			if board.particles.check_and_remove_point(x, y) {
+				board.particles.spawn(
+					h_area.x + h_area.width / 2,
+					h_area.y + h_area.height / 2,
+				);
+			}
 		}
-	}
-}
-
-// The borders get bigger when using RGB colors, so here we use ANSI colors
-fn get_ghost_style(tm_type: &TetrominoType) -> Style {
-	use ratatui::style::Stylize;
-
-	match tm_type {
-		TetrominoType::I => Style::new().cyan(),
-		TetrominoType::O => Style::new().light_yellow(),
-		TetrominoType::T => Style::new().magenta(),
-		TetrominoType::L => Style::new().yellow(),
-		TetrominoType::J => Style::new().light_blue(),
-		TetrominoType::S => Style::new().green(),
-		TetrominoType::Z => Style::new().light_red(),
-		_ => unreachable!(),
 	}
 }

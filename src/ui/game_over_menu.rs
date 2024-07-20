@@ -7,13 +7,14 @@ use ratatui::{
 use tui_big_text::{BigText, PixelSize};
 
 use super::{
-	list::list,
+	menu::menu,
 	utils::{rounded_block, Popup},
 };
-use crate::state::State;
+use crate::state::game_over_menu::GameOverMenu;
 
-pub fn game_over_menu(f: &mut Frame, state: &mut State) {
-	let new_score = state.scores.get_new_score();
+pub fn game_over_menu(f: &mut Frame, game_over_menu: &GameOverMenu) {
+	let new_score = game_over_menu.new_score.clone();
+
 	let (width_offest, height_offest) = if new_score.is_some() {
 		(8, 10)
 	} else {
@@ -57,13 +58,13 @@ pub fn game_over_menu(f: &mut Frame, state: &mut State) {
 
 	f.render_widget(title, title_area);
 
-	list(
+	menu(
 		f,
 		if chunk.len() == 3 {
 			chunk[2]
 		} else {
 			chunk[1]
 		},
-		&state.game_over_menu,
+		game_over_menu,
 	);
 }

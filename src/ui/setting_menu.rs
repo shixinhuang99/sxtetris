@@ -1,13 +1,13 @@
 use ratatui::{widgets::Padding, Frame};
 
-use super::{list::list, utils::Popup};
-use crate::state::ListState;
+use super::{menu::menu, utils::Popup};
+use crate::state::setting_menu::SettingMenu;
 
-pub fn setting_menu(f: &mut Frame, list_state: &ListState) {
+pub fn setting_menu(f: &mut Frame, setting_menu: &SettingMenu) {
 	let popup = Popup::new(60, 22)
 		.title("SETTING")
 		.padding(Padding::vertical(2))
 		.render(f);
 
-	list(f, popup, list_state);
+	menu(f, popup, setting_menu);
 }
