@@ -1,3 +1,5 @@
+use std::env;
+
 use anyhow::Result;
 
 use crate::{
@@ -32,6 +34,13 @@ impl App {
 	}
 
 	pub async fn run(&mut self) -> Result<()> {
+		for arg in env::args() {
+			if arg == "--show-save-path" {
+				self.save.show_save_path();
+				return Ok(());
+			}
+		}
+
 		self.term.init()?;
 		self.term.draw(loading)?;
 
