@@ -6,6 +6,7 @@ use tokio::{
 		broadcast,
 		mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
 	},
+	task::JoinSet,
 	time::{interval, sleep, Duration, Instant, Interval},
 };
 
@@ -53,18 +54,17 @@ enum SubEvent {
 pub struct MainHandler {
 	tx: Sender,
 	rx: Receiver,
+	set: JoinSet<()>,
 }
 
 impl MainHandler {
 	pub fn new() -> Self {
 		let (tx, rx) = unbounded_channel();
 
-		tokio::spawn(tick_task(tx.clone()));
-		tokio::spawn(term_task(tx.clone()));
-
 		Self {
 			tx,
 			rx,
+			set: JoinSet::new(),
 		}
 	}
 
@@ -75,12 +75,22 @@ impl MainHandler {
 	pub fn create_sub_handler(&self) -> SubHandler {
 		SubHandler::new(self.tx.clone())
 	}
+
+	pub fn init_task(&mut self) {
+		self.set.spawn(tick_task(self.tx.clone()));
+		self.set.spawn(term_task(self.tx.clone()));
+	}
+
+	pub async fn shutdown(&mut self) {
+		let _ = self.set.shutdown().await;
+	}
 }
 
 pub struct SubHandler {
 	tx: Sender,
 	sub_tx: SubSender,
 	_sub_rx: SubReceiver,
+	set: JoinSet<()>,
 }
 
 impl SubHandler {
@@ -91,20 +101,27 @@ impl SubHandler {
 			tx,
 			sub_tx,
 			_sub_rx,
+			set: JoinSet::new(),
 		}
 	}
 
-	pub fn spawn_count_down_task(&self, cnt: u8) {
-		tokio::spawn(count_down_task(self.tx.clone(), cnt));
+	pub async fn shutdown(&mut self) {
+		let _ = self.set.shutdown().await;
 	}
 
-	pub fn spawn_gravity_task(&self) {
-		tokio::spawn(gravity_task(self.tx.clone(), self.sub_tx.subscribe()));
+	pub fn start_count_down(&mut self, cnt: u8) {
+		self.set.spawn(count_down_task(self.tx.clone(), cnt));
 	}
 
-	pub fn spawn_lock_task(&self) {
+	pub fn spawn_gravity(&mut self) {
+		self.set
+			.spawn(gravity_task(self.tx.clone(), self.sub_tx.subscribe()));
+	}
+
+	pub fn start_lock(&mut self) {
 		set_locked(true);
-		tokio::spawn(lock_task(self.tx.clone(), self.sub_tx.subscribe()));
+		self.set
+			.spawn(lock_task(self.tx.clone(), self.sub_tx.subscribe()));
 	}
 
 	fn send(&self, event: SubEvent) {

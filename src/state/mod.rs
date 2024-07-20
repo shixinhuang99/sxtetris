@@ -33,7 +33,7 @@ use crate::{
 };
 
 pub struct State {
-	handler: SubHandler,
+	pub handler: SubHandler,
 	pub running: bool,
 	pub focus: Focus,
 	pub start_menu: StartMenu,
@@ -120,7 +120,7 @@ impl State {
 			self.focus.to(Scene::Game);
 			self.update_ghost_tetromino();
 			self.handler.pause();
-			self.handler.spawn_count_down_task(self.count_down);
+			self.handler.start_count_down(self.count_down);
 			global_audio(|audio| audio.play_music());
 		} else {
 			self.new_game();
@@ -138,7 +138,7 @@ impl State {
 		self.alive_tetromino.set_next(self.bag.next());
 		self.next_board.set_next(self.bag.next());
 		self.update_ghost_tetromino();
-		self.handler.spawn_gravity_task();
+		self.handler.spawn_gravity();
 		self.handler.cancel_pause();
 
 		global_audio(|audio| audio.play_music());
@@ -151,7 +151,7 @@ impl State {
 			self.count_down -= 1;
 			if self.count_down == 0 {
 				self.handler.cancel_pause();
-				self.handler.spawn_gravity_task();
+				self.handler.spawn_gravity();
 				self.check_lock();
 			}
 			global_audio(|audio| audio.play_sound(Sound::Menu));
@@ -232,7 +232,7 @@ impl State {
 				self.handler.refresh_lock();
 			}
 		} else if fit_together {
-			self.handler.spawn_lock_task();
+			self.handler.start_lock();
 		}
 	}
 

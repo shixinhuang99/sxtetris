@@ -33,12 +33,11 @@ impl App {
 
 	pub async fn run(&mut self) -> Result<()> {
 		self.term.init()?;
-
 		self.term.draw(loading)?;
 
 		init_global_audio();
-
 		self.save.read(&mut self.state);
+		self.handler.init_task();
 
 		while let Some(event) = self.handler.recv().await {
 			if event == Event::CtrlC {
@@ -61,8 +60,9 @@ impl App {
 		}
 
 		global_audio(|audio| audio.stop_all());
-
 		self.save.write(&self.state);
+		self.handler.shutdown().await;
+		self.state.handler.shutdown().await;
 
 		self.term.exit()?;
 
