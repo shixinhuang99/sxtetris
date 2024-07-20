@@ -26,8 +26,26 @@ Download the [latest release binary](https://github.com/shixinhuang99/sxtetris/r
 
 ## Note
 
-1. Suggested minimal terminal size: 176x49
-2. If you are a macOS user, please do not use the built-in terminal, as its forced line spacing makes the characters in the game look weird. It is recommended to use more modern terminals such as iTerm2.
+1. Suggested minimal terminal size: `176x49`.
+2. The terminal needs to support 24 bit color(true color), such as the `iTerm2`.
+3. If you are a macOS user, please do not use the built-in terminal, as its forced line spacing makes the characters in the game look weird. It is recommended to use more modern terminals such as `iTerm2`.
+4. If you are a linux user and get the following error when using `cargo install`:
+
+```
+The system library `alsa` required by crate `alsa-sys` was not found.
+The file `alsa.pc` needs to be installed and the PKG_CONFIG_PATH environment variable must contain its parent directory.
+The PKG_CONFIG_PATH environment variable is not set.
+
+HINT: if you have installed the library, try setting PKG_CONFIG_PATH to the directory containing `alsa.pc`.
+```
+
+you can try running the following command and install again:
+
+```sh
+sudo apt-get update
+sudo apt-get install libasound2-dev
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/pkgconfig:/usr/lib/x86_64-linux-gnu/pkgconfig
+```
 
 ## Sources of music and sound effects
 
