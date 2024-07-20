@@ -29,7 +29,7 @@ Download the [latest release binary](https://github.com/shixinhuang99/sxtetris/r
 1. Suggested minimal terminal size: `176x49`.
 2. The terminal needs to support 24 bit color(true color), such as the `iTerm2`.
 3. If you are a macOS user, please do not use the built-in terminal, as its forced line spacing makes the characters in the game look weird. It is recommended to use more modern terminals such as `iTerm2`.
-4. Use the `--show-save-path` argument at launch game to see where the archive is located.
+4. Use the `--show-save-path` argument at launch game to see the save location.
 5. If you are a linux user and get the following error when using `cargo install`:
 
 ```
