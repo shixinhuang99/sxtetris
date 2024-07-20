@@ -1,4 +1,6 @@
-#[derive(PartialEq, Eq)]
+use crate::global::{use_audio, Sound};
+
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub enum Scene {
 	StartMenu,
 	Game,
@@ -24,14 +26,22 @@ impl Focus {
 	pub fn to(&mut self, focus: Scene) {
 		self.history.clear();
 		self.history.push(focus);
+
+		use_audio(|audio| audio.play_sound(Sound::Menu));
 	}
 
 	pub fn push(&mut self, focus: Scene) {
 		self.history.push(focus);
+
+		if focus != Scene::GameOverMenu {
+			use_audio(|audio| audio.play_sound(Sound::Menu));
+		}
 	}
 
 	pub fn back(&mut self) {
 		self.history.pop();
+
+		use_audio(|audio| audio.play_sound(Sound::Menu));
 	}
 
 	pub fn current(&self) -> &Scene {

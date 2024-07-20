@@ -28,7 +28,7 @@ use tetromino::{Tetromino, TetrominoAction};
 use crate::{
 	common::{Menu, Reset},
 	consts::MAIN_BOARD_ROWS,
-	global::is_locked,
+	global::{is_locked, use_audio, Sound},
 	handler::{Event, SubHandler},
 };
 
@@ -121,6 +121,7 @@ impl State {
 			self.update_ghost_tetromino();
 			self.handler.pause();
 			self.handler.spawn_count_down_task(self.count_down);
+			use_audio(|audio| audio.play_music());
 		} else {
 			self.new_game();
 		}
@@ -137,6 +138,8 @@ impl State {
 		self.update_ghost_tetromino();
 		self.handler.spawn_gravity_task();
 		self.handler.cancel_pause();
+
+		use_audio(|audio| audio.play_music());
 	}
 
 	fn handle_game_play(&mut self, event: Event) {
@@ -149,6 +152,7 @@ impl State {
 				self.handler.spawn_gravity_task();
 				self.check_lock();
 			}
+			use_audio(|audio| audio.play_sound(Sound::Menu));
 			return;
 		}
 
@@ -200,14 +204,18 @@ impl State {
 			_ => (),
 		};
 
+		let is_move_event =
+			matches!(event, Event::Left | Event::Right | Event::Up | Event::Z);
+
 		if changed {
-			if matches!(
-				event,
-				Event::Left | Event::Right | Event::Up | Event::Z
-			) {
+			if is_move_event {
 				self.update_ghost_tetromino();
 			}
 			self.check_lock();
+		}
+
+		if is_move_event || event == Event::Down {
+			use_audio(|audio| audio.play_sound(Sound::Move));
 		}
 	}
 
@@ -285,6 +293,11 @@ impl State {
 		self.handler.cancel_lock();
 		let idx = self.scores.push_new_score(self.stats.score);
 		self.game_over_menu.set_new_score(self.stats.score, idx);
+
+		use_audio(|audio| {
+			audio.stop_music();
+			audio.play_sound(Sound::GameOver);
+		});
 	}
 
 	fn next_alive_tetromino(&mut self) {
@@ -321,6 +334,7 @@ impl State {
 					NEW_GAME => {
 						self.handler.cancel_lock();
 						self.handler.cancel_grvity();
+						self.pause_menu.reset();
 						self.new_game();
 					}
 					SCORES => self.focus.push(Scene::Scores),

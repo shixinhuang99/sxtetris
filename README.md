@@ -31,7 +31,7 @@ Download the [latest release binary](https://github.com/shixinhuang99/sxtetris/r
 
 ## Sources of music and sound effects
 
-All audio files are in the `src/assets` directory, files from [freesound](https://freesound.org) are trimmed
+All audio files are in the `src/global/assets` directory, files from [freesound](https://freesound.org) are trimmed
 
 | file          | author          | source                                                                 |
 | ------------- | --------------- | ---------------------------------------------------------------------- |

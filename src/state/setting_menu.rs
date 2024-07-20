@@ -1,4 +1,7 @@
-use crate::common::Menu;
+use crate::{
+	common::Menu,
+	global::{use_audio, Sound},
+};
 
 pub struct SettingMenu {
 	items: Vec<&'static str>,
@@ -22,6 +25,8 @@ impl SettingMenu {
 			SOUND => (),
 			_ => (),
 		}
+
+		use_audio(|audio| audio.play_sound(Sound::Menu));
 	}
 }
 
