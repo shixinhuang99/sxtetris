@@ -2,9 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2024-07-20
+
+[0c04f11](0c04f117159417eda4910e9687781392f6577e31)...[3210a2e](3210a2ee4c47bf34ca8985fab4b7dc4cf76d27d4)
+
+### Features
+
+- Add background music and sound effects (#17) ([4a7cd9f](4a7cd9f0ecbfda115d412e1aa5bfce53ce3c1580))
+- Add setting popup to turn particle effects, music and sound effects on or off (#18) ([ec2f740](ec2f740969bb8616e2752d7e2dbc5b69f73146e9))
+- Add `--show-save-path` argument to see the save location when launch game (#21) ([3210a2e](3210a2ee4c47bf34ca8985fab4b7dc4cf76d27d4))
+
+### Refactor
+
+- Use json as save file format and it is not compatible for old save (#19) ([02f4a85](02f4a8507111fed6b333d1de76fa206d11b908d5))
+- Refactor the logic of most parts of the code and elevate some state to global (#20) ([ddf0ba5](ddf0ba5b42be0ee3fcecaa7bae7555357fef5f24))
+
 ## [1.2.0] - 2024-06-30
 
-[aad8989](aad8989a1dba85300bea4765357bbe835b7db6d1)...[2663e2f](2663e2ff237da6f41700bb7032ac72aa70413467)
+[aad8989](aad8989a1dba85300bea4765357bbe835b7db6d1)...[0c04f11](0c04f117159417eda4910e9687781392f6577e31)
 
 ### Documentation
 
