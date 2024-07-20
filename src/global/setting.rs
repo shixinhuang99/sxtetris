@@ -3,6 +3,8 @@ use std::sync::{
 	OnceLock,
 };
 
+use serde::{Deserialize, Serialize};
+
 use super::global_audio;
 
 static SETTING: OnceLock<Setting> = OnceLock::new();
@@ -60,4 +62,28 @@ impl Setting {
 			global_audio(|audio| audio.stop_sound());
 		}
 	}
+
+	pub fn to_save_content(&self) -> SettingSave {
+		SettingSave {
+			particle: self.particle(),
+			music: self.music(),
+			sound: self.sound(),
+		}
+	}
+
+	pub fn read_from_save(&self, content: &SettingSave) {
+		self.particle.store(content.particle, Relaxed);
+		self.music.store(content.music, Relaxed);
+		self.sound.store(content.sound, Relaxed);
+		if content.sound {
+			global_audio(|audio| audio.stop_sound());
+		}
+	}
+}
+
+#[derive(Clone, Default, Deserialize, Serialize)]
+pub struct SettingSave {
+	particle: bool,
+	music: bool,
+	sound: bool,
 }

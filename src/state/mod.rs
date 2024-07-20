@@ -28,7 +28,7 @@ use tetromino::{Tetromino, TetrominoAction};
 use crate::{
 	common::{Menu, Reset},
 	consts::MAIN_BOARD_ROWS,
-	global::{global_audio, is_locked, Sound},
+	global::{global_audio, is_locked, set_played, Sound},
 	handler::{Event, SubHandler},
 };
 
@@ -125,6 +125,8 @@ impl State {
 		} else {
 			self.new_game();
 		}
+
+		set_played(true);
 	}
 
 	fn new_game(&mut self) {

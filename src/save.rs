@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
 	consts::APP_NAME,
+	global::{global_setting, setting::SettingSave},
 	state::{
 		bag::Bag, focus::Scene, main_board::MainBoard, next_board::NextBoard,
 		scores::Scores, stats::Stats, tetromino::Tetromino, State,
@@ -25,6 +26,7 @@ struct SaveInner {
 
 #[derive(Deserialize, Serialize)]
 struct SaveContent {
+	setting: SettingSave,
 	scores: Scores,
 	last_game: Option<LastGame>,
 }
@@ -45,15 +47,15 @@ impl Save {
 		}
 	}
 
-	pub fn read_to_state(&mut self, state: &mut State) {
+	pub fn read(&mut self, state: &mut State) {
 		if let Some(inner) = &mut self.inner {
-			inner.read_to_state(state);
+			inner.read(state);
 		}
 	}
 
-	pub fn write_state_to_save(&mut self, state: &State) {
+	pub fn write(&mut self, state: &State) {
 		if let Some(inner) = &mut self.inner {
-			inner.write_state_to_save(state);
+			inner.write(state);
 		}
 	}
 }
@@ -82,6 +84,7 @@ impl SaveInner {
 		Ok(Self {
 			file,
 			content: SaveContent {
+				setting: SettingSave::default(),
 				scores: Scores::new(),
 				last_game: None,
 			},
@@ -102,9 +105,10 @@ impl SaveInner {
 		Ok(())
 	}
 
-	fn read_to_state(&mut self, state: &mut State) {
+	fn read(&mut self, state: &mut State) {
 		if self.try_read().is_ok() {
 			state.scores.clone_from(&self.content.scores);
+			global_setting().read_from_save(&self.content.setting);
 			let Some(last_game) = self.content.last_game.take() else {
 				return;
 			};
@@ -118,8 +122,9 @@ impl SaveInner {
 		}
 	}
 
-	fn write_state_to_save(&mut self, state: &State) {
+	fn write(&mut self, state: &State) {
 		self.content.scores = state.scores.clone();
+		self.content.setting = global_setting().to_save_content();
 		self.content.last_game =
 			if *state.focus.current() != Scene::GameOverMenu {
 				Some(LastGame {

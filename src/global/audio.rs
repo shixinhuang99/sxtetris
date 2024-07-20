@@ -6,7 +6,7 @@ use rodio::{
 	Decoder, OutputStream, OutputStreamHandle, Sink, Source,
 };
 
-use super::global_setting;
+use super::{global_setting, is_played};
 
 type SoundSource = Buffered<Amplify<Decoder<Cursor<&'static [u8]>>>>;
 type MusicSource = Repeat<Amplify<Decoder<Cursor<&'static [u8]>>>>;
@@ -17,8 +17,15 @@ thread_local! {
 
 pub fn global_audio<F: FnOnce(&Audio)>(f: F) {
 	AUDIO.with(|cell| {
-		let audio = cell.get_or_init(Audio::new);
-		f(audio);
+		if let Some(audio) = cell.get() {
+			f(audio);
+		}
+	})
+}
+
+pub fn init_global_audio() {
+	AUDIO.with(|cell| {
+		let _ = cell.set(Audio::new());
 	})
 }
 
@@ -54,7 +61,7 @@ impl Audio {
 
 	pub fn resume_music(&self) {
 		if let Some(inner) = &self.inner {
-			if inner.music_sink.empty() {
+			if is_played() && inner.music_sink.empty() {
 				inner.music_sink.append(inner.music.clone());
 			}
 			inner.music_sink.play();

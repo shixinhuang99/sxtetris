@@ -4,6 +4,7 @@ mod cell;
 mod count_down;
 mod game_over_menu;
 mod help;
+mod loading;
 mod menu;
 mod next_board;
 mod particles;
@@ -19,6 +20,7 @@ use board::main_board;
 use count_down::count_down;
 use game_over_menu::game_over_menu;
 use help::help;
+pub use loading::loading;
 use particles::particles;
 use pause_menu::pause_menu;
 use ratatui::{

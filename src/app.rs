@@ -1,12 +1,12 @@
 use anyhow::Result;
 
 use crate::{
-	global::global_audio,
+	global::{global_audio, init_global_audio},
 	handler::{Event, MainHandler},
 	save::Save,
 	state::State,
 	term::Term,
-	ui::ui,
+	ui::{loading, ui},
 };
 
 pub struct App {
@@ -34,7 +34,11 @@ impl App {
 	pub async fn run(&mut self) -> Result<()> {
 		self.term.init()?;
 
-		self.save.read_to_state(&mut self.state);
+		self.term.draw(loading)?;
+
+		init_global_audio();
+
+		self.save.read(&mut self.state);
 
 		while let Some(event) = self.handler.recv().await {
 			if event == Event::CtrlC {
@@ -58,7 +62,7 @@ impl App {
 
 		global_audio(|audio| audio.stop_all());
 
-		self.save.write_state_to_save(&self.state);
+		self.save.write(&self.state);
 
 		self.term.exit()?;
 
