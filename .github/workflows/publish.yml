@@ -12,7 +12,6 @@ env:
 
 jobs:
   publish-crate:
-    needs: upload-assets
     runs-on: ubuntu-latest
 
     steps:
