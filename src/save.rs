@@ -20,7 +20,7 @@ pub struct Save {
 }
 
 struct SaveInner {
-	file: PathBuf,
+	pub file: PathBuf,
 	pub content: SaveContent,
 }
 
@@ -56,6 +56,12 @@ impl Save {
 	pub fn write(&mut self, state: &State) {
 		if let Some(inner) = &mut self.inner {
 			inner.write(state);
+		}
+	}
+
+	pub fn show_save_path(&self) {
+		if let Some(inner) = &self.inner {
+			println!("{}", inner.file.display());
 		}
 	}
 }
