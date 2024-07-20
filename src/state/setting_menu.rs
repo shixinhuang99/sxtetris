@@ -1,17 +1,17 @@
 use crate::{
-	common::Menu,
-	global::{use_audio, Sound},
+	common::{Menu, VecExt},
+	global::{global_setting, Sound, AUDIO},
 };
 
 pub struct SettingMenu {
-	items: Vec<&'static str>,
+	items: Vec<String>,
 	cursor: usize,
 }
 
 impl SettingMenu {
 	pub fn new() -> Self {
 		Self {
-			items: vec!["PARTICLE", "MUSIC", "SOUND"],
+			items: vec!["PARTICLE", "MUSIC", "SOUND"].into_owned_vec(),
 			cursor: 0,
 		}
 	}
@@ -19,14 +19,16 @@ impl SettingMenu {
 	pub fn handle_enter(&self) {
 		use setting_menu_idx::*;
 
+		let setting = global_setting();
+
 		match self.cursor {
-			PARTICLE => (),
-			MUSIC => (),
-			SOUND => (),
+			PARTICLE => setting.switch_particle(),
+			MUSIC => setting.switch_music(),
+			SOUND => setting.switch_sound(),
 			_ => (),
 		}
 
-		use_audio(|audio| audio.play_sound(Sound::Menu));
+		AUDIO.with(|audio| audio.play_sound(Sound::Menu));
 	}
 }
 
@@ -39,8 +41,21 @@ impl Menu for SettingMenu {
 		self.cursor
 	}
 
-	fn items(&self) -> &[&'static str] {
-		&self.items
+	fn end(&self) -> usize {
+		self.items.len() - 1
+	}
+
+	fn items(&self) -> Vec<String> {
+		use setting_menu_idx::*;
+
+		let mut items = self.items.clone();
+		let setting = global_setting();
+
+		items[PARTICLE] = particle_text(setting.particle());
+		items[MUSIC] = music_text(setting.music());
+		items[SOUND] = sound_text(setting.sound());
+
+		items
 	}
 }
 
@@ -48,4 +63,25 @@ mod setting_menu_idx {
 	pub const PARTICLE: usize = 0;
 	pub const MUSIC: usize = 1;
 	pub const SOUND: usize = 2;
+}
+
+fn bool_text(v: bool) -> String {
+	let text = if v {
+		"ON"
+	} else {
+		"OFF"
+	};
+	text.to_string()
+}
+
+fn particle_text(v: bool) -> String {
+	format!("{:<10}{:>3}", "PARTICLE: ", bool_text(v))
+}
+
+fn music_text(v: bool) -> String {
+	format!("{:<10}{:>3}", "MUSIC: ", bool_text(v))
+}
+
+fn sound_text(v: bool) -> String {
+	format!("{:<10}{:>3}", "SOUND: ", bool_text(v))
 }

@@ -1,7 +1,7 @@
-use crate::common::Menu;
+use crate::common::{Menu, VecExt};
 
 pub struct GameOverMenu {
-	items: Vec<&'static str>,
+	items: Vec<String>,
 	cursor: usize,
 	pub new_score: Option<String>,
 }
@@ -9,7 +9,7 @@ pub struct GameOverMenu {
 impl GameOverMenu {
 	pub fn new() -> Self {
 		Self {
-			items: vec!["NEW GAME", "SCORES", "QUIT"],
+			items: vec!["NEW GAME", "SCORES", "QUIT"].into_owned_vec(),
 			cursor: 0,
 			new_score: None,
 		}
@@ -33,8 +33,12 @@ impl Menu for GameOverMenu {
 		self.cursor
 	}
 
-	fn items(&self) -> &[&'static str] {
-		&self.items
+	fn end(&self) -> usize {
+		self.items.len() - 1
+	}
+
+	fn items(&self) -> Vec<String> {
+		self.items.clone()
 	}
 }
 

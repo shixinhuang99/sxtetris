@@ -1,7 +1,7 @@
-use crate::common::Menu;
+use crate::common::{Menu, VecExt};
 
 pub struct PauseMenu {
-	items: Vec<&'static str>,
+	items: Vec<String>,
 	cursor: usize,
 }
 
@@ -10,7 +10,8 @@ impl PauseMenu {
 		Self {
 			items: vec![
 				"RESUME", "NEW GAME", "SCORES", "SETTING", "HELP", "QUIT",
-			],
+			]
+			.into_owned_vec(),
 			cursor: 0,
 		}
 	}
@@ -25,8 +26,12 @@ impl Menu for PauseMenu {
 		self.cursor
 	}
 
-	fn items(&self) -> &[&'static str] {
-		&self.items
+	fn end(&self) -> usize {
+		self.items.len() - 1
+	}
+
+	fn items(&self) -> Vec<String> {
+		self.items.clone()
 	}
 }
 

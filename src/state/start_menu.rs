@@ -1,14 +1,15 @@
-use crate::common::Menu;
+use crate::common::{Menu, VecExt};
 
 pub struct StartMenu {
-	items: Vec<&'static str>,
+	items: Vec<String>,
 	cursor: usize,
 }
 
 impl StartMenu {
 	pub fn new() -> Self {
 		Self {
-			items: vec!["PLAY", "SCORES", "SETTING", "HELP", "ABOUT", "QUIT"],
+			items: vec!["PLAY", "SCORES", "SETTING", "HELP", "ABOUT", "QUIT"]
+				.into_owned_vec(),
 			cursor: 0,
 		}
 	}
@@ -23,8 +24,12 @@ impl Menu for StartMenu {
 		self.cursor
 	}
 
-	fn items(&self) -> &[&'static str] {
-		&self.items
+	fn end(&self) -> usize {
+		self.items.len() - 1
+	}
+
+	fn items(&self) -> Vec<String> {
+		self.items.clone()
 	}
 }
 

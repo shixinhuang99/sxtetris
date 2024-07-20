@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use crate::{
-	global::use_audio,
+	global::AUDIO,
 	handler::{Event, MainHandler},
 	save::Save,
 	state::State,
@@ -56,7 +56,7 @@ impl App {
 			}
 		}
 
-		use_audio(|audio| audio.stop_all());
+		AUDIO.with(|audio| audio.stop_all());
 
 		self.save.write_state_to_save(&self.state);
 

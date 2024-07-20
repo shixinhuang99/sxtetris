@@ -4,7 +4,7 @@ use std::slice::Iter;
 
 use ratatui::style::Color;
 
-use crate::{common::Reset, consts::FRAME_RATE_SECS};
+use crate::{common::Reset, consts::FRAME_RATE_SECS, global::global_setting};
 
 #[derive(Clone)]
 pub struct Particle {
@@ -73,6 +73,9 @@ pub struct Particles {
 
 impl Particles {
 	pub fn push_point(&mut self, x: usize, y: usize) {
+		if !global_setting().particle() {
+			return;
+		}
 		self.points.push((x, y));
 	}
 

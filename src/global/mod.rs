@@ -1,9 +1,10 @@
 mod audio;
+pub mod setting;
 
 use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 
-use audio::Audio;
-pub use audio::Sound;
+pub use audio::{Sound, AUDIO};
+pub use setting::global_setting;
 
 static PAUSED: AtomicBool = AtomicBool::new(false);
 static LOCKED: AtomicBool = AtomicBool::new(false);
@@ -22,12 +23,4 @@ pub fn is_locked() -> bool {
 
 pub fn set_locked(v: bool) {
 	LOCKED.store(v, Relaxed);
-}
-
-thread_local! {
-	static AUDIO: Audio = Audio::new();
-}
-
-pub fn use_audio<F: FnOnce(&Audio)>(f: F) {
-	AUDIO.with(f);
 }

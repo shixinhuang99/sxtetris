@@ -19,7 +19,7 @@ pub fn menu(f: &mut Frame, rect: Rect, menuable: &dyn Menu) {
 	for (i, item) in items.iter().enumerate() {
 		let title = BigText::builder()
 			.pixel_size(PixelSize::Quadrant)
-			.lines([Line::raw(item.to_string())])
+			.lines([Line::raw(item)])
 			.style(
 				if i == cursor {
 					Style::new().light_yellow()

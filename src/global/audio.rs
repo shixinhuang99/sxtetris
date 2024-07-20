@@ -6,8 +6,14 @@ use rodio::{
 	Decoder, OutputStream, OutputStreamHandle, Sink, Source,
 };
 
+use super::global_setting;
+
 type SoundSource = Buffered<Amplify<Decoder<Cursor<&'static [u8]>>>>;
 type MusicSource = Repeat<Amplify<Decoder<Cursor<&'static [u8]>>>>;
+
+thread_local! {
+	pub static AUDIO: Audio = Audio::new();
+}
 
 pub struct Audio {
 	inner: Option<AudioInner>,
@@ -39,6 +45,12 @@ impl Audio {
 		}
 	}
 
+	pub fn resume_music(&self) {
+		if let Some(inner) = &self.inner {
+			inner.music_sink.play();
+		}
+	}
+
 	pub fn stop_music(&self) {
 		if let Some(inner) = &self.inner {
 			inner.music_sink.stop();
@@ -46,6 +58,9 @@ impl Audio {
 	}
 
 	pub fn play_music(&self) {
+		if !global_setting().music() {
+			return;
+		}
 		if let Some(inner) = &self.inner {
 			if !inner.music_sink.empty() {
 				inner.music_sink.clear();
@@ -56,6 +71,9 @@ impl Audio {
 	}
 
 	pub fn play_sound(&self, sound: Sound) {
+		if !global_setting().sound() {
+			return;
+		}
 		if let Some(inner) = &self.inner {
 			if let Some(source) = inner.sound_map.get(&sound.into()) {
 				let source = source.clone();
