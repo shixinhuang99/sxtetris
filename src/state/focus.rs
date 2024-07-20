@@ -1,4 +1,4 @@
-use crate::global::{Sound, AUDIO};
+use crate::global::{global_audio, Sound};
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum Scene {
@@ -27,21 +27,21 @@ impl Focus {
 		self.history.clear();
 		self.history.push(focus);
 
-		AUDIO.with(|audio| audio.play_sound(Sound::Menu));
+		global_audio(|audio| audio.play_sound(Sound::Menu));
 	}
 
 	pub fn push(&mut self, focus: Scene) {
 		self.history.push(focus);
 
 		if focus != Scene::GameOverMenu {
-			AUDIO.with(|audio| audio.play_sound(Sound::Menu));
+			global_audio(|audio| audio.play_sound(Sound::Menu));
 		}
 	}
 
 	pub fn back(&mut self) {
 		self.history.pop();
 
-		AUDIO.with(|audio| audio.play_sound(Sound::Menu));
+		global_audio(|audio| audio.play_sound(Sound::Menu));
 	}
 
 	pub fn current(&self) -> &Scene {

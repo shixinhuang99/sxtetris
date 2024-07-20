@@ -6,7 +6,7 @@ use super::{particles::Particles, Tetromino};
 use crate::{
 	common::{Board, Position, Reset, TetrominoKind},
 	consts::{MAIN_BOARD_COLS, MAIN_BOARD_ROWS},
-	global::{Sound, AUDIO},
+	global::{global_audio, Sound},
 };
 
 pub type SharedMainBoard = Rc<RefCell<MainBoard>>;
@@ -55,12 +55,12 @@ impl MainBoard {
 			self.line_clear.lines.push(i);
 		}
 
-		AUDIO.with(|audio| audio.play_sound(Sound::Lock));
+		global_audio(|audio| audio.play_sound(Sound::Lock));
 
 		let num = self.line_clear.lines.len();
 		if num != 0 {
 			self.line_clear.in_progress = true;
-			AUDIO.with(|audio| audio.play_sound(Sound::Clear));
+			global_audio(|audio| audio.play_sound(Sound::Clear));
 		}
 
 		num

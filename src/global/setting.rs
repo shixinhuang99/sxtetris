@@ -3,7 +3,7 @@ use std::sync::{
 	OnceLock,
 };
 
-use super::AUDIO;
+use super::global_audio;
 
 static SETTING: OnceLock<Setting> = OnceLock::new();
 
@@ -47,9 +47,9 @@ impl Setting {
 		let previous = self.music.load(Relaxed);
 		self.music.store(!previous, Relaxed);
 		if previous {
-			AUDIO.with(|audio| audio.pause_music());
+			global_audio(|audio| audio.pause_music());
 		} else {
-			AUDIO.with(|audio| audio.resume_music());
+			global_audio(|audio| audio.resume_music());
 		}
 	}
 
@@ -57,7 +57,7 @@ impl Setting {
 		let previous = self.sound.load(Relaxed);
 		self.sound.store(!previous, Relaxed);
 		if previous {
-			AUDIO.with(|audio| audio.stop_sound());
+			global_audio(|audio| audio.stop_sound());
 		}
 	}
 }

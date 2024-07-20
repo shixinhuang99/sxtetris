@@ -1,6 +1,6 @@
 use crate::{
 	common::{Menu, VecExt},
-	global::{global_setting, Sound, AUDIO},
+	global::{global_audio, global_setting, Sound},
 };
 
 pub struct SettingMenu {
@@ -28,7 +28,7 @@ impl SettingMenu {
 			_ => (),
 		}
 
-		AUDIO.with(|audio| audio.play_sound(Sound::Menu));
+		global_audio(|audio| audio.play_sound(Sound::Menu));
 	}
 }
 

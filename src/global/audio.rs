@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::Cursor};
+use std::{cell::OnceCell, collections::HashMap, io::Cursor};
 
 use anyhow::Result;
 use rodio::{
@@ -12,7 +12,14 @@ type SoundSource = Buffered<Amplify<Decoder<Cursor<&'static [u8]>>>>;
 type MusicSource = Repeat<Amplify<Decoder<Cursor<&'static [u8]>>>>;
 
 thread_local! {
-	pub static AUDIO: Audio = Audio::new();
+	static AUDIO: OnceCell<Audio> = const { OnceCell::new() };
+}
+
+pub fn global_audio<F: FnOnce(&Audio)>(f: F) {
+	AUDIO.with(|cell| {
+		let audio = cell.get_or_init(Audio::new);
+		f(audio);
+	})
 }
 
 pub struct Audio {
@@ -47,6 +54,9 @@ impl Audio {
 
 	pub fn resume_music(&self) {
 		if let Some(inner) = &self.inner {
+			if inner.music_sink.empty() {
+				inner.music_sink.append(inner.music.clone());
+			}
 			inner.music_sink.play();
 		}
 	}

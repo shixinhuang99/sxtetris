@@ -3,7 +3,7 @@ pub mod setting;
 
 use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 
-pub use audio::{Sound, AUDIO};
+pub use audio::{global_audio, Sound};
 pub use setting::global_setting;
 
 static PAUSED: AtomicBool = AtomicBool::new(false);

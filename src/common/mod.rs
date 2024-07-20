@@ -5,7 +5,7 @@ mod tetromino_kind;
 pub use position::{pos, Position};
 pub use tetromino_kind::TetrominoKind;
 
-use crate::global::{Sound, AUDIO};
+use crate::global::{global_audio, Sound};
 
 pub trait Board {
 	fn get_kind(&self, x: usize, y: usize) -> Option<&TetrominoKind>;
@@ -34,7 +34,7 @@ pub trait Menu {
 			*cursor -= 1;
 		}
 
-		AUDIO.with(|audio| audio.play_sound(Sound::Menu));
+		global_audio(|audio| audio.play_sound(Sound::Menu));
 	}
 
 	fn down(&mut self) {
@@ -47,7 +47,7 @@ pub trait Menu {
 			*cursor += 1;
 		}
 
-		AUDIO.with(|audio| audio.play_sound(Sound::Menu));
+		global_audio(|audio| audio.play_sound(Sound::Menu));
 	}
 
 	fn reset(&mut self) {

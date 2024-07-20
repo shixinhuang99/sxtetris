@@ -28,7 +28,7 @@ use tetromino::{Tetromino, TetrominoAction};
 use crate::{
 	common::{Menu, Reset},
 	consts::MAIN_BOARD_ROWS,
-	global::{is_locked, Sound, AUDIO},
+	global::{global_audio, is_locked, Sound},
 	handler::{Event, SubHandler},
 };
 
@@ -121,7 +121,7 @@ impl State {
 			self.update_ghost_tetromino();
 			self.handler.pause();
 			self.handler.spawn_count_down_task(self.count_down);
-			AUDIO.with(|audio| audio.play_music());
+			global_audio(|audio| audio.play_music());
 		} else {
 			self.new_game();
 		}
@@ -139,7 +139,7 @@ impl State {
 		self.handler.spawn_gravity_task();
 		self.handler.cancel_pause();
 
-		AUDIO.with(|audio| audio.play_music());
+		global_audio(|audio| audio.play_music());
 	}
 
 	fn handle_game_play(&mut self, event: Event) {
@@ -152,7 +152,7 @@ impl State {
 				self.handler.spawn_gravity_task();
 				self.check_lock();
 			}
-			AUDIO.with(|audio| audio.play_sound(Sound::Menu));
+			global_audio(|audio| audio.play_sound(Sound::Menu));
 			return;
 		}
 
@@ -215,7 +215,7 @@ impl State {
 		}
 
 		if is_move_event || event == Event::Down {
-			AUDIO.with(|audio| audio.play_sound(Sound::Move));
+			global_audio(|audio| audio.play_sound(Sound::Move));
 		}
 	}
 
@@ -294,7 +294,7 @@ impl State {
 		let idx = self.scores.push_new_score(self.stats.score);
 		self.game_over_menu.set_new_score(self.stats.score, idx);
 
-		AUDIO.with(|audio| {
+		global_audio(|audio| {
 			audio.stop_music();
 			audio.play_sound(Sound::GameOver);
 		});
