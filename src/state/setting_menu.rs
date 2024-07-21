@@ -65,13 +65,12 @@ mod setting_menu_idx {
 	pub const SOUND: usize = 2;
 }
 
-fn bool_text(v: bool) -> String {
-	let text = if v {
+fn bool_text(v: bool) -> &'static str {
+	if v {
 		"ON"
 	} else {
 		"OFF"
-	};
-	text.to_string()
+	}
 }
 
 fn particle_text(v: bool) -> String {
