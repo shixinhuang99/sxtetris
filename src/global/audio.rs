@@ -41,15 +41,15 @@ impl Audio {
 	}
 
 	pub fn stop_all(&self) {
-		if let Some(inner) = &self.inner {
-			inner.music_sink.stop();
-			inner.short_sound_sink.stop();
-		}
+		self.stop_music();
+		self.stop_sound();
 	}
 
 	pub fn stop_sound(&self) {
 		if let Some(inner) = &self.inner {
 			inner.short_sound_sink.stop();
+			inner.line_clear_sound_sink.stop();
+			inner.game_over_sound_sink.stop();
 		}
 	}
 
