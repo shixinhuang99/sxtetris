@@ -2,9 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2024-07-21
+
+[ea59c2f](ea59c2fe5e3735d7e0c3d048e8ef9690de5e575d)...[449cefc](449cefcfd908fdfe1eaf9f5110cb87c8730badd2)
+
+### Bug Fixes
+
+- Fix bug where there was always only one score (#26) ([0019767](00197670e38af39582d5a9e5d63fcba538508e91))
+- Missed some sounds when stoping sound playback (#27) ([449cefc](449cefcfd908fdfe1eaf9f5110cb87c8730badd2))
+
+### Miscellaneous Tasks
+
+- Fix name (#24) ([61cd6ef](61cd6ef50bc7cb330f1902001eafed5317dba087))
+- Remove needs (#25) ([a870fa3](a870fa3ef9f5dd7b42c49630e3ef05cdf459f1a5))
+
 ## [1.3.0] - 2024-07-20
 
-[0c04f11](0c04f117159417eda4910e9687781392f6577e31)...[3210a2e](3210a2ee4c47bf34ca8985fab4b7dc4cf76d27d4)
+[0c04f11](0c04f117159417eda4910e9687781392f6577e31)...[ea59c2f](ea59c2fe5e3735d7e0c3d048e8ef9690de5e575d)
 
 ### Features
 
