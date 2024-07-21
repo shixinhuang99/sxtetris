@@ -82,7 +82,7 @@ impl MainHandler {
 	}
 
 	pub async fn shutdown(&mut self) {
-		let _ = self.set.shutdown().await;
+		self.set.shutdown().await;
 	}
 }
 
@@ -106,7 +106,7 @@ impl SubHandler {
 	}
 
 	pub async fn shutdown(&mut self) {
-		let _ = self.set.shutdown().await;
+		self.set.shutdown().await;
 	}
 
 	pub fn start_count_down(&mut self, cnt: u8) {
