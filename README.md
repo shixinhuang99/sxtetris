@@ -14,6 +14,13 @@ https://github.com/shixinhuang99/sxtetris/assets/31186725/1eb95c10-e57e-4239-814
 
 ## Installation
 
+### Using Homebrew (precompiled binaries)
+
+```sh
+brew tap shixinhuang99/brew
+brew install sxtetris
+```
+
 ### Cargo
 
 ```sh
