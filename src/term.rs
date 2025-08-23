@@ -1,5 +1,5 @@
 use std::{
-	io::{stderr, Stderr},
+	io::{Stderr, stderr},
 	panic,
 };
 
@@ -7,11 +7,11 @@ use anyhow::Result;
 use crossterm::{
 	execute,
 	terminal::{
-		disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
-		LeaveAlternateScreen, SetTitle,
+		EnterAlternateScreen, LeaveAlternateScreen, SetTitle, disable_raw_mode,
+		enable_raw_mode,
 	},
 };
-use ratatui::{backend::CrosstermBackend, Frame, Terminal};
+use ratatui::{Frame, Terminal, backend::CrosstermBackend};
 
 use crate::consts::APP_NAME;
 
@@ -23,9 +23,7 @@ impl Term {
 	pub fn new() -> Result<Self> {
 		let terminal = Terminal::new(CrosstermBackend::new(stderr()))?;
 
-		Ok(Self {
-			terminal,
-		})
+		Ok(Self { terminal })
 	}
 
 	pub fn init(&mut self) -> Result<()> {

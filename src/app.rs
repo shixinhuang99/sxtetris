@@ -71,7 +71,6 @@ impl App {
 		global_audio(|audio| audio.stop_all());
 		self.save.write(&self.state);
 		self.handler.shutdown().await;
-		self.state.handler.shutdown().await;
 
 		self.term.exit()?;
 

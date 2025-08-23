@@ -8,8 +8,9 @@ use crate::{
 	consts::APP_NAME,
 	global::{global_setting, setting::SettingSave},
 	state::{
-		bag::Bag, focus::Scene, main_board::MainBoard, next_board::NextBoard,
-		scores::Scores, stats::Stats, tetromino::Tetromino, State,
+		State, bag::Bag, focus::Scene, main_board::MainBoard,
+		next_board::NextBoard, scores::Scores, stats::Stats,
+		tetromino::Tetromino,
 	},
 };
 

@@ -1,4 +1,4 @@
-use ratatui::{widgets::Padding, Frame};
+use ratatui::{Frame, widgets::Padding};
 
 use super::{menu::menu, utils::Popup};
 use crate::state::setting_menu::SettingMenu;

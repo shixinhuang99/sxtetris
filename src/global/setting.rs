@@ -1,6 +1,6 @@
 use std::sync::{
-	atomic::{AtomicBool, Ordering::Relaxed},
 	OnceLock,
+	atomic::{AtomicBool, Ordering::Relaxed},
 };
 
 use serde::{Deserialize, Serialize};

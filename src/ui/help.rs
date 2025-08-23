@@ -1,8 +1,8 @@
 use ratatui::{
+	Frame,
 	style::{Style, Stylize},
 	text::{Line, Text},
-	widgets::{block::Padding, Paragraph},
-	Frame,
+	widgets::{Paragraph, block::Padding},
 };
 
 use super::utils::Popup;

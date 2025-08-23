@@ -1,6 +1,6 @@
 use crate::{
 	common::{Menu, VecExt},
-	global::{global_audio, global_setting, Sound},
+	global::{Sound, global_audio, global_setting},
 };
 
 pub struct SettingMenu {

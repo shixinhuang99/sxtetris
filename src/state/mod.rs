@@ -14,21 +14,21 @@ pub mod tetromino;
 
 use bag::Bag;
 use focus::{Focus, Scene};
-use game_over_menu::{game_over_menu_idx, GameOverMenu};
+use game_over_menu::{GameOverMenu, game_over_menu_idx};
 use ghost_tetromino::GhostTetromino;
 use main_board::{MainBoard, SharedMainBoard};
 use next_board::NextBoard;
-use pause_menu::{pause_menu_idx, PauseMenu};
+use pause_menu::{PauseMenu, pause_menu_idx};
 use scores::Scores;
 use setting_menu::SettingMenu;
-use start_menu::{start_menu_idx, StartMenu};
+use start_menu::{StartMenu, start_menu_idx};
 use stats::Stats;
 use tetromino::{Tetromino, TetrominoAction};
 
 use crate::{
 	common::{Menu, Reset},
 	consts::MAIN_BOARD_ROWS,
-	global::{global_audio, is_locked, set_played, Sound},
+	global::{Sound, global_audio, is_locked, set_played},
 	handler::{Event, SubHandler},
 };
 
@@ -99,17 +99,15 @@ impl State {
 		match event {
 			Event::Up => self.start_menu.up(),
 			Event::Down => self.start_menu.down(),
-			Event::Enter => {
-				match self.start_menu.cursor() {
-					PLAY => self.play(),
-					SCORES => self.focus.push(Scene::Scores),
-					SETTING => self.focus.push(Scene::SettingMenu),
-					HELP => self.focus.push(Scene::Help),
-					ABOUT => self.focus.push(Scene::About),
-					QUIT => self.running = false,
-					_ => (),
-				}
-			}
+			Event::Enter => match self.start_menu.cursor() {
+				PLAY => self.play(),
+				SCORES => self.focus.push(Scene::Scores),
+				SETTING => self.focus.push(Scene::SettingMenu),
+				HELP => self.focus.push(Scene::Help),
+				ABOUT => self.focus.push(Scene::About),
+				QUIT => self.running = false,
+				_ => (),
+			},
 			Event::Esc => self.running = false,
 			_ => (),
 		}
@@ -326,26 +324,24 @@ impl State {
 		match event {
 			Event::Up => self.pause_menu.up(),
 			Event::Down => self.pause_menu.down(),
-			Event::Enter => {
-				match self.pause_menu.cursor() {
-					RESUME => {
-						self.focus.back();
-						self.handler.cancel_pause();
-						self.pause_menu.reset();
-					}
-					NEW_GAME => {
-						self.handler.cancel_lock();
-						self.handler.cancel_grvity();
-						self.pause_menu.reset();
-						self.new_game();
-					}
-					SCORES => self.focus.push(Scene::Scores),
-					SETTING => self.focus.push(Scene::SettingMenu),
-					HELP => self.focus.push(Scene::Help),
-					QUIT => self.running = false,
-					_ => (),
+			Event::Enter => match self.pause_menu.cursor() {
+				RESUME => {
+					self.focus.back();
+					self.handler.cancel_pause();
+					self.pause_menu.reset();
 				}
-			}
+				NEW_GAME => {
+					self.handler.cancel_lock();
+					self.handler.cancel_grvity();
+					self.pause_menu.reset();
+					self.new_game();
+				}
+				SCORES => self.focus.push(Scene::Scores),
+				SETTING => self.focus.push(Scene::SettingMenu),
+				HELP => self.focus.push(Scene::Help),
+				QUIT => self.running = false,
+				_ => (),
+			},
 			Event::Esc => {
 				self.focus.back();
 				self.handler.cancel_pause();
@@ -374,17 +370,15 @@ impl State {
 		match event {
 			Event::Up => self.game_over_menu.up(),
 			Event::Down => self.game_over_menu.down(),
-			Event::Enter => {
-				match self.game_over_menu.cursor() {
-					NEW_GAME => {
-						self.new_game();
-						self.game_over_menu.reset();
-					}
-					SCORES => self.focus.push(Scene::Scores),
-					QUIT => self.running = false,
-					_ => (),
+			Event::Enter => match self.game_over_menu.cursor() {
+				NEW_GAME => {
+					self.new_game();
+					self.game_over_menu.reset();
 				}
-			}
+				SCORES => self.focus.push(Scene::Scores),
+				QUIT => self.running = false,
+				_ => (),
+			},
 			_ => (),
 		}
 	}

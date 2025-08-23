@@ -1,7 +1,7 @@
 use ratatui::{
+	Frame,
 	style::{Style, Stylize},
 	text::Line,
-	Frame,
 };
 use tui_big_text::{BigText, PixelSize};
 

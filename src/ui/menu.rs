@@ -1,8 +1,8 @@
 use ratatui::{
+	Frame,
 	layout::{Constraint, Flex, Layout, Rect},
 	style::{Style, Stylize},
 	text::Line,
-	Frame,
 };
 use tui_big_text::{BigText, PixelSize};
 
@@ -20,13 +20,11 @@ pub fn menu(f: &mut Frame, rect: Rect, menuable: &dyn Menu) {
 		let title = BigText::builder()
 			.pixel_size(PixelSize::Quadrant)
 			.lines([Line::raw(item)])
-			.style(
-				if i == cursor {
-					Style::new().light_yellow()
-				} else {
-					Style::new().white()
-				},
-			)
+			.style(if i == cursor {
+				Style::new().light_yellow()
+			} else {
+				Style::new().white()
+			})
 			.build()
 			.unwrap();
 

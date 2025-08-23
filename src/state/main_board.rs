@@ -2,11 +2,11 @@ use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use serde::{Deserialize, Serialize};
 
-use super::{particles::Particles, Tetromino};
+use super::{Tetromino, particles::Particles};
 use crate::{
 	common::{Board, Position, Reset, TetrominoKind},
 	consts::{MAIN_BOARD_COLS, MAIN_BOARD_ROWS},
-	global::{global_audio, Sound},
+	global::{Sound, global_audio},
 };
 
 pub type SharedMainBoard = Rc<RefCell<MainBoard>>;

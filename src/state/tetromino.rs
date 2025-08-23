@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{MainBoard, SharedMainBoard};
 use crate::{
-	common::{pos, Position, TetrominoKind},
+	common::{Position, TetrominoKind, pos},
 	consts::MAIN_BOARD_BUFFER_ROWS,
 };
 
@@ -89,22 +89,18 @@ impl Tetromino {
 		let diff = self.position.clone() - init_position;
 
 		let next_orientation = match action {
-			TetrominoAction::RotateRight => {
-				match self.orientation {
-					N => E,
-					E => S,
-					S => W,
-					W => N,
-				}
-			}
-			TetrominoAction::RotateLeft => {
-				match self.orientation {
-					N => W,
-					W => S,
-					S => E,
-					E => N,
-				}
-			}
+			TetrominoAction::RotateRight => match self.orientation {
+				N => E,
+				E => S,
+				S => W,
+				W => N,
+			},
+			TetrominoAction::RotateLeft => match self.orientation {
+				N => W,
+				W => S,
+				S => E,
+				E => N,
+			},
 			_ => unreachable!(),
 		};
 
@@ -236,7 +232,7 @@ pub enum TetrominoAction {
 }
 
 mod kick_map_jlstz {
-	use super::{pos, Position};
+	use super::{Position, pos};
 
 	pub const NE: Position = pos([(-1, 0), (-1, 1), (0, -2), (-1, -2)]);
 
@@ -256,7 +252,7 @@ mod kick_map_jlstz {
 }
 
 mod kick_map_i {
-	use super::{pos, Position};
+	use super::{Position, pos};
 
 	pub const NE: Position = pos([(-2, 0), (1, 0), (-2, -1), (1, 2)]);
 

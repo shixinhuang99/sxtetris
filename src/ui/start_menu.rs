@@ -1,8 +1,8 @@
 use ratatui::{
+	Frame,
 	layout::{Constraint, Layout, Rect},
 	style::{Color, Style},
 	text::{Line, Span},
-	Frame,
 };
 use tui_big_text::{BigText, PixelSize};
 

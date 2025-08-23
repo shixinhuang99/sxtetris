@@ -1,4 +1,4 @@
-use ratatui::{layout::Constraint, text::Line, Frame};
+use ratatui::{Frame, layout::Constraint, text::Line};
 use tui_big_text::{BigText, PixelSize};
 
 use super::utils::centered_rect;

@@ -1,5 +1,4 @@
-include = ["**/*.toml"]
-exclude = ["**/Cargo.lock"]
+include = ["*.toml", ".cargo/*.toml"]
 
 [[rule]]
 include = ["**/Cargo.toml"]

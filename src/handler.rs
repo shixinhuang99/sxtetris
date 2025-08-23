@@ -4,10 +4,10 @@ use crossterm::event::{
 use tokio::{
 	sync::{
 		broadcast,
-		mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+		mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
 	},
 	task::JoinSet,
-	time::{interval, sleep, Duration, Instant, Interval},
+	time::{Duration, Instant, Interval, interval, sleep},
 };
 
 use crate::{
@@ -90,7 +90,6 @@ pub struct SubHandler {
 	tx: Sender,
 	sub_tx: SubSender,
 	_sub_rx: SubReceiver,
-	set: JoinSet<()>,
 }
 
 impl SubHandler {
@@ -101,27 +100,20 @@ impl SubHandler {
 			tx,
 			sub_tx,
 			_sub_rx,
-			set: JoinSet::new(),
 		}
 	}
 
-	pub async fn shutdown(&mut self) {
-		self.set.shutdown().await;
-	}
-
 	pub fn start_count_down(&mut self, cnt: u8) {
-		self.set.spawn(count_down_task(self.tx.clone(), cnt));
+		tokio::spawn(count_down_task(self.tx.clone(), cnt));
 	}
 
 	pub fn spawn_gravity(&mut self) {
-		self.set
-			.spawn(gravity_task(self.tx.clone(), self.sub_tx.subscribe()));
+		tokio::spawn(gravity_task(self.tx.clone(), self.sub_tx.subscribe()));
 	}
 
 	pub fn start_lock(&mut self) {
 		set_locked(true);
-		self.set
-			.spawn(lock_task(self.tx.clone(), self.sub_tx.subscribe()));
+		tokio::spawn(lock_task(self.tx.clone(), self.sub_tx.subscribe()));
 	}
 
 	fn send(&self, event: SubEvent) {

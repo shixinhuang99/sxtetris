@@ -1,4 +1,4 @@
-use ratatui::{buffer::Buffer, layout::Rect, widgets::StatefulWidget, Frame};
+use ratatui::{Frame, buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::state::particles::Particles;
 

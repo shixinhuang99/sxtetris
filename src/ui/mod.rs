@@ -24,10 +24,10 @@ pub use loading::loading;
 use particles::particles;
 use pause_menu::pause_menu;
 use ratatui::{
+	Frame,
 	layout::{Constraint, Flex, Layout},
 	style::{Color, Style},
 	widgets::{Block, BorderType, Borders},
-	Frame,
 };
 use scores::scores;
 use setting_menu::setting_menu;
@@ -39,7 +39,7 @@ use crate::{
 		MAIN_BOARD_COLS, MAIN_BOARD_VISIBLE_ROWS, MIN_CELL_HEIGHT,
 		MIN_CELL_WIDTH,
 	},
-	state::{focus::Scene, State},
+	state::{State, focus::Scene},
 };
 
 const ROWS: u16 = MAIN_BOARD_VISIBLE_ROWS as u16;

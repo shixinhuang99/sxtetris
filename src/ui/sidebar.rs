@@ -1,11 +1,11 @@
+use Constraint::{Length, Ratio};
 use ratatui::{
+	Frame,
 	layout::{Constraint, Flex, Layout, Rect},
 	style::{Color, Style},
 	text::Line,
-	Frame,
 };
 use tui_big_text::{BigText, PixelSize};
-use Constraint::{Length, Ratio};
 
 use super::{next_board::next_board, utils::rounded_block};
 use crate::{consts::NEXT_BOARD_ROWS, state::State};

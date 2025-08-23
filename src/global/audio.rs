@@ -2,8 +2,8 @@ use std::{cell::OnceCell, collections::HashMap, io::Cursor};
 
 use anyhow::Result;
 use rodio::{
-	source::{Amplify, Buffered, Repeat},
 	Decoder, OutputStream, OutputStreamHandle, Sink, Source,
+	source::{Amplify, Buffered, Repeat},
 };
 
 use super::{global_setting, is_played};

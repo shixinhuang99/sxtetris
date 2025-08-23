@@ -1,8 +1,8 @@
 use ratatui::{
+	Frame,
 	layout::{Alignment, Constraint, Flex, Layout, Rect},
 	style::{Style, Stylize},
 	widgets::{Block, BorderType, Clear, Padding},
-	Frame,
 };
 
 pub fn centered_rect(

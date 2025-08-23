@@ -1,14 +1,14 @@
 use ratatui::{
+	Frame,
 	layout::{Constraint, Flex, Layout},
 	style::{Color, Style},
 	text::Line,
-	Frame,
 };
 use tui_big_text::{BigText, PixelSize};
 
 use super::{
 	menu::menu,
-	utils::{rounded_block, Popup},
+	utils::{Popup, rounded_block},
 };
 use crate::state::game_over_menu::GameOverMenu;
 

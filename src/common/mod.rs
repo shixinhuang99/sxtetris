@@ -2,10 +2,10 @@ mod point;
 mod position;
 mod tetromino_kind;
 
-pub use position::{pos, Position};
+pub use position::{Position, pos};
 pub use tetromino_kind::TetrominoKind;
 
-use crate::global::{global_audio, Sound};
+use crate::global::{Sound, global_audio};
 
 pub trait Board {
 	fn get_kind(&self, x: usize, y: usize) -> Option<&TetrominoKind>;

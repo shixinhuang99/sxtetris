@@ -1,5 +1,4 @@
 [toolchain]
-# 1.81.0-nightly (8337ba918 2024-06-12)
-channel = "nightly-2024-06-13"
+channel = "stable"
 profile = "minimal"
 components = ["rustfmt", "clippy"]

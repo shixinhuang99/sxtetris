@@ -1,8 +1,8 @@
 use ratatui::{
+	Frame,
 	style::{Color, Style},
 	text::Line,
 	widgets::block::Padding,
-	Frame,
 };
 use tui_big_text::{BigText, PixelSize};
 

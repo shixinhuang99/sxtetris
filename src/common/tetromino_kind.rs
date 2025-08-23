@@ -1,7 +1,7 @@
 use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
 
-use super::{pos, Position};
+use super::{Position, pos};
 
 #[derive(Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 pub enum TetrominoKind {
@@ -72,7 +72,7 @@ impl TetrominoKind {
 }
 
 mod position_map {
-	use super::{pos, Position};
+	use super::{Position, pos};
 
 	type Map = [Position; 4];
 

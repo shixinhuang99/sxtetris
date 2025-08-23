@@ -1,4 +1,4 @@
-use crate::global::{global_audio, Sound};
+use crate::global::{Sound, global_audio};
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum Scene {

@@ -1,8 +1,8 @@
 use ratatui::{
+	Frame,
 	layout::Rect,
 	style::{Color, Style},
 	widgets::{Block, BorderType},
-	Frame,
 };
 
 use crate::common::TetrominoKind;
