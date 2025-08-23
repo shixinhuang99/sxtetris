@@ -22,7 +22,7 @@ pub struct Setting {
 impl Setting {
 	pub fn new() -> Self {
 		Self {
-			particle: AtomicBool::new(false),
+			particle: AtomicBool::new(true),
 			music: AtomicBool::new(false),
 			sound: AtomicBool::new(false),
 		}

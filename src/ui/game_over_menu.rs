@@ -15,13 +15,13 @@ use crate::state::game_over_menu::GameOverMenu;
 pub fn game_over_menu(f: &mut Frame, game_over_menu: &GameOverMenu) {
 	let new_score = game_over_menu.new_score.clone();
 
-	let (width_offest, height_offest) = if new_score.is_some() {
-		(8, 10)
+	let offest = if new_score.is_some() {
+		8
 	} else {
-		(0, 0)
+		0
 	};
 
-	let popup = Popup::new(48 + width_offest, 26 + height_offest).render(f);
+	let popup = Popup::new(48 + offest, 24 + offest).render(f);
 
 	let mut constraints = vec![Constraint::Length(4), Constraint::Length(16)];
 
@@ -29,7 +29,7 @@ pub fn game_over_menu(f: &mut Frame, game_over_menu: &GameOverMenu) {
 		constraints.insert(1, Constraint::Length(6));
 	}
 
-	let chunk = Layout::vertical(constraints).spacing(3).split(popup);
+	let chunk = Layout::vertical(constraints).spacing(2).split(popup);
 
 	if let Some(score) = new_score {
 		let new_score_block = rounded_block().title("NEW SCORE");

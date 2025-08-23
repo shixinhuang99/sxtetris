@@ -34,7 +34,7 @@ Download pre-built binaries from the [latest releases](https://github.com/shixin
 
 ## System Requirements
 
-1. **Terminal Size**: Suggested minimum terminal size: `176x49`
+1. **Terminal Size**: Suggested minimum terminal size: `105x45`
 2. **Color Support**: Terminal must support 24-bit color (true color)
 3. **Recommended Terminals**:
    - macOS: `iTerm2`

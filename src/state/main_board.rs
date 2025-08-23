@@ -98,6 +98,11 @@ impl MainBoard {
 			false
 		}
 	}
+
+	// < 1.4.0
+	pub fn is_21_rows(&self) -> bool {
+		self.cells.len() == 21
+	}
 }
 
 impl Board for MainBoard {

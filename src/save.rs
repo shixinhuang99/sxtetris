@@ -119,6 +119,9 @@ impl SaveInner {
 			let Some(last_game) = self.content.last_game.take() else {
 				return;
 			};
+			if last_game.board.is_21_rows() {
+				return;
+			}
 			state.count_down = 3;
 			state.board.replace(last_game.board);
 			state.next_board.clone_from(&last_game.next_board);
@@ -132,18 +135,20 @@ impl SaveInner {
 	fn write(&mut self, state: &State) {
 		self.content.scores = state.scores.clone();
 		self.content.setting = global_setting().to_save_content();
-		self.content.last_game =
-			if *state.focus.current() != Scene::GameOverMenu {
-				Some(LastGame {
-					board: state.board.borrow().clone(),
-					next_board: state.next_board.clone(),
-					bag: state.bag.clone(),
-					alive_tetromino: state.alive_tetromino.clone(),
-					stats: state.stats.clone(),
-				})
-			} else {
-				None
-			};
+		if !state.focus.contains(Scene::StartMenu) {
+			self.content.last_game =
+				if *state.focus.current() != Scene::GameOverMenu {
+					Some(LastGame {
+						board: state.board.borrow().clone(),
+						next_board: state.next_board.clone(),
+						bag: state.bag.clone(),
+						alive_tetromino: state.alive_tetromino.clone(),
+						stats: state.stats.clone(),
+					})
+				} else {
+					None
+				};
+		}
 
 		let _ = self.try_write();
 	}

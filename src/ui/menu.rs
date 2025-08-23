@@ -13,7 +13,7 @@ pub fn menu(f: &mut Frame, rect: Rect, menuable: &dyn Menu) {
 	let items = menuable.items();
 
 	let v_chunks = Layout::vertical(vec![Constraint::Length(4); items.len()])
-		.spacing(2)
+		.spacing(1)
 		.split(rect);
 
 	for (i, item) in items.iter().enumerate() {
